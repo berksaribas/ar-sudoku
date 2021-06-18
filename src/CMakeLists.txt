@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.9)
 set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE TYPE INTERNAL FORCE)
 
 project(Sudoku)
@@ -15,10 +15,11 @@ include(opencv.cmake)
 
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(OpenMP REQUIRED)
 
 include_directories( ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 file(GLOB Sudoku_SOURCES ./*.cpp
 			     ./*.h)
 
 add_executable(Sudoku ${Sudoku_SOURCES})
-target_link_libraries (Sudoku ${GLEW_LIBRARY} ${GLFW_LIBRARY} ${OPENGL_LIBRARIES} ${OpenCV_LIBS}) 
+target_link_libraries (Sudoku ${GLEW_LIBRARY} ${GLFW_LIBRARY} ${OPENGL_LIBRARIES} ${OpenCV_LIBS} OpenMP::OpenMP_CXX) 
