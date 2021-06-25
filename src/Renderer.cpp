@@ -1,0 +1,184 @@
+#include "Renderer.h"
+
+static GLuint matToTexture(const cv::Mat& mat) {
+	// Generate a number for our textureID's unique handle
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+
+	// Bind to our texture handle
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// Set texture filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Set texture clamping method
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+	// Set incoming texture format to:
+	// GL_BGR       for CV_CAP_OPENNI_BGR_IMAGE,
+	// GL_LUMINANCE for CV_CAP_OPENNI_DISPARITY_MAP,
+	// Work out other mappings as required ( there's a list in comments in main() )
+	GLenum inputColourFormat = GL_BGR;
+	if (mat.channels() == 1)
+	{
+		inputColourFormat = GL_LUMINANCE;
+	}
+
+	// Create the texture
+	glTexImage2D(GL_TEXTURE_2D,     // Type of texture
+		0,                 // Pyramid level (for mip-mapping) - 0 is the top level
+		GL_RGB,            // Internal colour format to convert to
+		mat.cols,          // Image width  i.e. 640 for Kinect in standard mode
+		mat.rows,          // Image height i.e. 480 for Kinect in standard mode
+		0,                 // Border width in pixels (can either be 1 or 0)
+		inputColourFormat, // Input image format (i.e. GL_RGB, GL_RGBA, GL_BGR etc.)
+		GL_UNSIGNED_BYTE,  // Image data type
+		mat.ptr());        // The actual image data itself
+
+	return textureID;
+}
+
+void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data)
+{
+	glViewport(0, 0, width, height); // use a screen size of WIDTH x HEIGHT
+
+	// Clear color and depth buffers
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearDepth(0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the window
+
+	//Rendering the view
+	{
+		glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
+		glPushMatrix();
+		glLoadIdentity();
+		glOrtho(0.0, width, height, 0.0, 0.0, 100.0);
+
+		glMatrixMode(GL_MODELVIEW);    // Set the matrix mode to object modeling
+		glPushMatrix();
+		glLoadIdentity();
+
+		glEnable(GL_TEXTURE_2D);
+		GLuint image_tex = matToTexture(image);
+		glBindTexture(GL_TEXTURE_2D, image_tex);
+
+		/* Draw a quad */
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 0); glVertex3f(0, 0, 0);
+		glTexCoord2f(0, 1); glVertex3f(0, height, 0);
+		glTexCoord2f(1, 1); glVertex3f(width, height, 0);
+		glTexCoord2f(1, 0); glVertex3f(width, 0, 0);
+		glEnd();
+
+		glDeleteTextures(1, &image_tex);
+		glDisable(GL_TEXTURE_2D);
+		
+		glPopMatrix();
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+	}
+
+	//Rendering each number
+	for(int i = 0; i < 81; i++)
+	{
+		glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
+		glPushMatrix();
+		glLoadIdentity();
+		glOrtho(0.0, width, height, 0.0, 0.0, 100.0);
+
+		glMatrixMode(GL_MODELVIEW);    // Set the matrix mode to object modeling
+		glPushMatrix();
+		glLoadIdentity();
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, number_textures[data[i].number - 1]);
+
+		auto result1 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y, 1.0f) * transformation_matrix;
+		auto result2 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y, 1.0f) * transformation_matrix;
+		auto result3 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y + data[i].height, 1.0f) * transformation_matrix;
+		auto result4 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y + data[i].height, 1.0f) * transformation_matrix;
+		
+		result1 /= result1.z;
+		result2 /= result2.z;
+		result3 /= result3.z;
+		result4 /= result4.z;
+
+		/* Draw a quad */
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
+		glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
+		glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
+		glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
+
+		glEnd();
+
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+	}
+
+		
+	// Swap front and back buffers
+	glfwSwapBuffers(window);
+	// Poll for and process events
+	glfwPollEvents();
+}
+
+void Renderer::init(int width_, int height_, float fov)
+{
+	//Init glfw
+	if (!glfwInit()) {
+		exit(EXIT_FAILURE);
+	}
+
+	//OpenGL version
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+	window = glfwCreateWindow(width_, height_, "OpenGL Sudoku Renderer", NULL, NULL);
+	width = width_;
+	height = height_;
+
+	if (!window) {
+		glfwTerminate();
+		exit(EXIT_FAILURE);
+	}
+
+	glfwMakeContextCurrent(window);
+
+	glfwSwapInterval(1);
+
+	//  Initialise glew (must occur AFTER window creation or glew will error)
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		exit(-1);
+	}
+
+	// Create a perspective projection matrix
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	// The camera should be calibrated -> a calibration results in the projection matrix -> then load the matrix
+	// -> into GL_PROJECTION
+	// -> adjustment of FOV is needed for each camera
+	float ratio = (GLfloat)width / (GLfloat)height;
+
+	float near = 0.01f, far = 100.f;
+	float top = tan((double)(fov * M_PI / 360.0f)) * near;
+	float bottom = -top;
+	float left = ratio * bottom;
+	float right = ratio * top;
+	glFrustum(left, right, bottom, top, near, far);
+
+	//Generate textures for numbers
+	for (int i = 0; i < 9; i++) {
+		number_textures[i] = matToTexture(cv::imread("../data/" + std::to_string(i + 1) + ".jpg"));
+	}
+}

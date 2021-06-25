@@ -10,14 +10,16 @@ set(GLFW_LIBRARY ${LIBRARY_DIR}/glfw/lib-vc2019/glfw3.lib CACHE PATH "Path to gl
 
 set(GLEW_INCLUDE_DIRS ${LIBRARY_DIR}/glew/include CACHE PATH "Path to glew include")
 set(GLEW_LIBRARY ${LIBRARY_DIR}/glew/lib/Release/x64/glew32s.lib CACHE PATH "Path to glew libraries")
+set(GLM_DIR ${LIBRARY_DIR}/glm/cmake/glm CACHE PATH "Path to glm libraries")
 
 include(opencv.cmake)
 
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(GLM REQUIRED)
 
-include_directories( ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+include_directories( ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
 file(GLOB Sudoku_SOURCES ./*.cpp
 			     ./*.h)
 

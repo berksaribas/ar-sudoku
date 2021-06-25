@@ -2,6 +2,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <iostream>
+#include "Renderer.h"
 
 using namespace std;
 using namespace cv;
@@ -16,13 +17,17 @@ using namespace cv;
 const int fps = 30;
 
 int main() {
+	Renderer renderer;
+
 	Mat frame;
 	Mat bw_frame;
 	VideoCapture video;
+	SquareData* data = new SquareData[81];
 
 #if LIFESTREAM
 	video.open(0);
 #endif
+	renderer.init(640, 480, 90);
 
 	if (!video.isOpened())
 	{
@@ -223,16 +228,19 @@ int main() {
 					// subimage of the grid containing one number
 					// offset choosen via trial and error
 					grid(Rect(delta * c +10, delta * r +10, delta -15, delta -13)).copyTo(number);
+					data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, c + 1);
 					// imshow("grid", number);
 
 					// call number recognition program here
 				}
 			}
 #endif
-
+			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
+			renderer.render(frame, glm::inverse(matrix), data);
 		}
 
 		imshow("Sudoku Solver Interface", frame);
+
 		//__debugbreak();
 		if (waitKey(fps) == 27) break;
 	}
