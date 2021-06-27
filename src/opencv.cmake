@@ -1,1 +1,1 @@
-set(OpenCV_DIR "C:/opencv/build")
+set(OpenCV_DIR "C:/Users/bauer/DATA K/Master Robotics, Cognition, Intelligence/Module/Erweiterte Realitaet/Code/opencv/build")

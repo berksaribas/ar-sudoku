@@ -1,27 +1,24 @@
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/imgproc.hpp>
-#include <iostream>
+#include "main.h"
 #include "Renderer.h"
 
 using namespace std;
 using namespace cv;
 
 
-#define LIFESTREAM 0
-#define ADAPTIVETHRESHOLD 1
-#define RESOLUTION 400
-#define SUBPIXEL 0
-#define NUMBER 1
+#define LIFESTREAM 0			// use prerecorded video or camera
+#define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
+#define RESOLUTION 600			// Size of the rectified sudoku grid
+#define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
 
-const int fps = 30;
+const int fps = 30;				// frames per second of the video
 
 int main() {
 	Renderer renderer;
-
-	Mat frame;
-	Mat bw_frame;
-	VideoCapture video;
+	int n = 0;
+	int values[9][9][10];
+	Mat frame;					// image
+	Mat bw_frame;				// balck-white image
+	VideoCapture video;			// video
 	SquareData* data = new SquareData[81];
 
 #if LIFESTREAM
@@ -32,53 +29,53 @@ int main() {
 	if (!video.isOpened())
 	{
 		cout << "No camera was found!\n";
-		video.open("SudokuVideo.MP4");
+		video.open("SudokuVideo.MP4");			// open prerecorded video
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
 			exit(0);
 		}
 	}
 
-	namedWindow("Sudoku Solver Interface", CV_WINDOW_FREERATIO);
-	namedWindow("grid", CV_WINDOW_FREERATIO);
+	namedWindow("Sudoku Solver Interface", CV_WINDOW_FREERATIO);		// window containing the video and augmentions
+	namedWindow("grid", CV_WINDOW_FREERATIO);							// window containing the rectified grid
 
 #if !ADAPTIVETHRESHOLD
-	int Slider = 180;
+	int Slider = 180;													// slider for manual threshold option
 	createTrackbar("Threshold", "Sudoku Solver Interface", &Slider, 255, 0);
 #endif
 
 
-	while (video.read(frame))
+	while (video.read(frame))											// loop through the video for each image
 	{
-		cvtColor(frame, bw_frame, CV_BGR2GRAY);
-#if ADAPTIVETHRESHOLD
+		cvtColor(frame, bw_frame, CV_BGR2GRAY);							// switch to grayscale
+#if ADAPTIVETHRESHOLD													// switch threshold option to get a black-white image
 		adaptiveThreshold(bw_frame, bw_frame, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 33, 5);
 #else
 		threshold(bw_frame, bw_frame, Slider, 255, THRESH_BINARY);
 #endif
 
 		vector<vector<Point>> contours;
-		findContours(bw_frame, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+		findContours(bw_frame, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);	// storing corner points of image contours
 
 		vector<Point> approx_contour;
 		for (int k = 0; k < contours.size(); k++) {
-			approxPolyDP(contours[k], approx_contour, arcLength(contours[k], true) * 0.02, true);
+			approxPolyDP(contours[k], approx_contour, arcLength(contours[k], true) * 0.02, true);	// converting contours to polygons
 			
 			Rect Rectangle = boundingRect(approx_contour);
-			if (approx_contour.size() != 4 ||
-				Rectangle.height < 200 || Rectangle.width < 200 || Rectangle.width > frame.cols - 10 ||
-				Rectangle.height > frame.rows - 10) continue;
+			if (approx_contour.size() != 4 ||																// filter for quadrangles
+				Rectangle.height < 200 || Rectangle.width < 200 || Rectangle.width > frame.cols - 10 ||		// and minimum size of 200 pixels in width and height
+				Rectangle.height > frame.rows - 10) continue;												// don't exceed frame boundaries
 
-			polylines(frame, approx_contour, true, Scalar(0, 0, 255), 1);
+			polylines(frame, approx_contour, true, Scalar(0, 0, 255), 1);		// highlight the found quadrangle in the image
 
-			Point2f targetCorners[4];
+			Point2f targetCorners[4];									// used later for rectifying the sudoku grid
 			targetCorners[0] = { -0.5, -0.5 };
 			targetCorners[1] = { RESOLUTION - 0.5, -0.5 };
 			targetCorners[2] = { RESOLUTION - 0.5, RESOLUTION - 0.5 };
 			targetCorners[3] = { -0.5, RESOLUTION - 0.5 };
 
 			Mat TransMatrix(Size(3, 3), CV_32FC1);
-			Point2f corners[4];
+			Point2f corners[4];											// finding the up left corner of the sudoku grid
 			int minWeight = 1e5;
 			int minWeightIndex;
 			for (int i = 0; i < 4; i++) {
@@ -91,35 +88,32 @@ int main() {
 			for (int i = 0; i < 4; i++) {
 				corners[i] = approx_contour[(minWeightIndex + i) % 4];
 			}
-			circle(frame, corners[0], 10, Scalar(200, 100, 200));
+			circle(frame, corners[0], 10, Scalar(200, 100, 200));		// highlighting the up left corner of the sudoku grid
 
-#if SUBPIXEL
+#if SUBPIXEL															// getting more accurate corner points of the sudoku grid
 			Point2f Inters[4];
 			float Parameters[16];
 			Mat Lines(Size(4, 4), CV_32F, Parameters);
 
-			for (int i = 0; i < approx_contour.size(); i++) {
+			for (int i = 0; i < 4; i++) {
 				
-				Point2f delta = (Point2f(approx_contour[(i + 1) % 4] - approx_contour[i])) / 7.0;
+				Point2f delta = (Point2f(corners[(i + 1) % 4] - corners[i])) / 7.0;
 				Point2f direction = Point2f(-delta.y, delta.x);
 				direction = direction / norm(direction);
 
-				// minimum length 5 & uneven
 				int len = (int)norm(delta) * 1.5;
 				Size stripesize;
-				stripesize.height = (len < 5) ? 5 : len + 1 - len % 2;
-				stripesize.width = 3;
-				Mat stripe(stripesize, CV_8UC1);
+				stripesize.height = (len < 5) ? 5 : len + 1 - len % 2;	// minimum length 5 & uneven
+				stripesize.width = 3;									// fixed width 3
+				Mat stripe(stripesize, CV_8UC1);						// creating stripes along the contours
 
 				Point2f subPixelPos[6];
 				for (int n = 1; n < 7; n++) {
-					Point2f circle_position = (Point2f)approx_contour[i] + n * delta;
+					Point2f circle_position = (Point2f)corners[i] + n * delta;	// 6 seperation points per contour between two corner points
+					circle(frame, circle_position, 1, Scalar(255, 255, 0), -1);	// highlight seperator point position in the image
 
 
-					circle(frame, circle_position, 1, Scalar(255, 255, 0), -1);
-
-
-					for (int h = 0; h < stripesize.height; h++) {
+					for (int h = 0; h < stripesize.height; h++) {				// fill the stripe with intensity values
 						float h_rel = h - floorf(stripesize.height / 2);
 #if STRIPES
 						circle(frame, circle_position + h_rel * direction, 1, color);
@@ -134,7 +128,7 @@ int main() {
 							if (P.x > 0 && P.x < bw_frame.cols - 1 &&
 								P.y > 0 && P.y < bw_frame.rows - 1) {
 
-								stripe.at<uchar>(h, w) = bw_frame.at<uchar>(P.y, P.x) * (1 - dP.x) * (1 - dP.y)
+								stripe.at<uchar>(h, w) = bw_frame.at<uchar>(P.y, P.x) * (1 - dP.x) * (1 - dP.y)	// interpolation of intensity values
 									+ bw_frame.at<uchar>(P.y, P.x + 1) * dP.x * (1 - dP.y)
 									+ bw_frame.at<uchar>(P.y + 1, P.x) * (1 - dP.x) * dP.y
 									+ bw_frame.at<uchar>(P.y + 1, P.x + 1) * dP.x * dP.y;
@@ -146,53 +140,57 @@ int main() {
 							}
 						}
 					}
-					// Sobel
+					// Sobel for contours orthogonal to the stripe
 					vector<double> sobelValues(stripesize.height - 2);
 					for (int y = 0; y < stripesize.height - 2; y++) {
 
 						sobelValues[y] =
-							// first row
+							// first row of convolution
 							+1. * stripe.at<uchar>(y, 0)
 							+ 2. * stripe.at<uchar>(y, 1)
 							+ 1. * stripe.at<uchar>(y, 2)
-							// third row
+							// third row of convolution
 							- 1. * stripe.at<uchar>(y + 2, 0)
 							- 2. * stripe.at<uchar>(y + 2, 1)
 							- 1. * stripe.at<uchar>(y + 2, 2);
 					}
 					double x[3];
-					double y[3]; // max Intensity
+					double y[3];
 					y[1] = (double)sobelValues[0];
 					x[1] = 0.;
 					for (int s = 1; s < sobelValues.size(); s++) {
 						if (sobelValues[s] >= y[1]) {
-							y[1] = (double)sobelValues[s];
+							y[1] = (double)sobelValues[s]; // max Intensity
 							x[1] = s;
 						}
 					}
 					x[0] = x[1] - 1;
 					x[2] = x[1] + 1;
-					y[0] = (x[1] > 0) ? (double)sobelValues[x[0]] : 0;
+					y[0] = (x[1] > 0) ? (double)sobelValues[x[0]] : 0;			// do not exceed stripe boundaries
 					y[2] = (x[2] < sobelValues.size()) ? (double)sobelValues[x[2]] : 0;
 
+					// solve y[i] = a x[i]^2 + b x[i] + c
 					double a = (-y[0] + 2 * y[1] - y[2]) / (-pow(x[0], 2) + 2 * pow(x[1], 2) - pow(x[2], 2));
 					double b = y[1] - y[0] + a * (pow(x[0], 2) - pow(x[1], 2));
 					double c = y[0] - a * pow(x[0], 2) - b * x[0];
-					// f'=2ax+b
+
+					// derive f'=2ax+b and solve for x
 					double X = -b / (2. * a);
 
-					subPixelPos[n - 1] = circle_position + (X - x[1]) * direction;
-				}
+					subPixelPos[n - 1] = circle_position + (X - x[1]) * direction;	// exact position of the separating point
+			}
 
 				Mat ExactPoints(Size(1, 6), CV_32FC2, subPixelPos);
-				fitLine(ExactPoints, Lines.col(i), CV_DIST_L2, 0, 0.01, 0.01);
+				fitLine(ExactPoints, Lines.col(i), CV_DIST_L2, 0, 0.01, 0.01);		// linear regression trough exact sepatation points
 
-				Point2i Point1 = Point2i(Parameters[8 + i] - 50 * Parameters[i], Parameters[12 + i] - 50 * Parameters[4 + i]);
-				Point2i Point2 = Point2i(Parameters[8 + i] + 50 * Parameters[i], Parameters[12 + i] + 50 * Parameters[4 + i]);
+				// for drawing the calculated lines
+				// Point2i Point1 = Point2i(Parameters[8 + i] - 50 * Parameters[i], Parameters[12 + i] - 50 * Parameters[4 + i]);
+				// Point2i Point2 = Point2i(Parameters[8 + i] + 50 * Parameters[i], Parameters[12 + i] + 50 * Parameters[4 + i]);
 
 			}
 
 			float a[2], b[2], c[2], d[2], lambda_1, lambda_2;
+			// line equations
 			// a + b * lambda_1
 			// c + d * lambda_2
 			for (int i = 0; i < 4; i++) {
@@ -209,8 +207,9 @@ int main() {
 				lambda_2 = (c[1] - a[1] - (c[0] - a[0]) / b[0] * b[1]) / (d[0] * b[1] / b[0] - d[1]);
 				lambda_1 = (c[0] - a[0] + lambda_2 * d[0]) / b[0];
 
-				Inters[i].x = a[0] + lambda_1 * b[0];
-				Inters[i].y = a[1] + lambda_1 * b[1];
+				// Calculate intersection points
+				Inters[(i + 1) % 4].x = a[0] + lambda_1 * b[0];
+				Inters[(i + 1) % 4].y = a[1] + lambda_1 * b[1];
 			}
 			TransMatrix = getPerspectiveTransform(Inters, targetCorners);
 #else		
@@ -220,23 +219,49 @@ int main() {
 			warpPerspective(bw_frame, grid, TransMatrix, Size(RESOLUTION, RESOLUTION));
 			imshow("grid", grid);
 
-#if NUMBER
-			Mat number;
-			float delta = RESOLUTION / 9;
-			for (int c = 0; c < 9; c++) {
-				for (int r = 0; r < 9; r++) {
-					// subimage of the grid containing one number
-					// offset choosen via trial and error
-					grid(Rect(delta * c +10, delta * r +10, delta -15, delta -13)).copyTo(number);
-					data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, c + 1);
-					// imshow("grid", number);
+			if (n < 10) {
 
-					// call number recognition program here
+				Mat number;
+				Mat demo_number;
+
+				float delta = RESOLUTION / 9;
+				for (int c = 0; c < 9; c++) {
+					for (int r = 0; r < 9; r++) {
+						// subimage of the grid containing one number
+						// offset choosen via trial and error
+						grid(Rect(delta * c + 10, delta * r + 10, delta - 15, delta - 13)).copyTo(number);
+						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders 
+						cvtColor(number, demo_number, CV_GRAY2BGR);			// for demo purposes (further functions only wor on bw images)
+
+						// call number recognition program here
+						values[r][c][n] = image2numbers(number, demo_number);
+
+					}
 				}
+
+				// line(demo_number, Point(33, 33), Point(33, 33), Scalar(100, 255, 100));
+				// cv::imshow("grid", demo_number);
+				// __debugbreak();
+
+				if (n == 9) {
+					for (int r = 0; r < 9; r++) {
+						for (int c = 0; c < 9; c++) {
+
+							vector<int> input;
+							input.clear();
+							for (int m = 0; m < 10; m++) {
+								input.push_back(values[r][c][m]);
+							}
+							cout << mostFrequent(input);	// output recognized numbers
+							cout << "\t";
+						}
+						cout << "\n";
+					}
+				}
+				n++;
 			}
-#endif
-			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
-			renderer.render(frame, glm::inverse(matrix), data);
+			//glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
+			//renderer.render(frame, glm::inverse(matrix), data);
 		}
 
 		imshow("Sudoku Solver Interface", frame);
