@@ -134,7 +134,7 @@ SudokuData SudokuSolver::solve(SudokuData data) {
         return data;
     }
 
-    Point p = epoint.p;
+    SudokuPoint p = epoint.p;
 
     if (p.col == -1 || p.row == -1) {
         data.answer = true;

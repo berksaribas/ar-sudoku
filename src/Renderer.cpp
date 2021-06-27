@@ -84,6 +84,10 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 	//Rendering each number
 	for(int i = 0; i < 81; i++)
 	{
+		if (!data[i].draw) {
+			continue;
+		}
+
 		glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
 		glPushMatrix();
 		glLoadIdentity();

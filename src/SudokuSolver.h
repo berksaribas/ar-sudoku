@@ -1,12 +1,12 @@
 #pragma once
 
-struct Point {
+struct SudokuPoint {
 	int row;
 	int col;
 };
 
 struct EmptyPoint {
-	Point p;
+	SudokuPoint p;
 	unsigned int num_possible_values;
 	unsigned short possible_value_bits;
 };

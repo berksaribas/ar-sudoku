@@ -13,12 +13,14 @@ struct SquareData {
 	int x, y;
 	int width, height;
 	int number;
-	SquareData(int x_, int y_, int width_, int height_, int number_) {
+	bool draw;
+	SquareData(int x_, int y_, int width_, int height_, int number_, bool draw_) {
 		x = x_;
 		y = y_;
 		width = width_;
 		height = height_;
 		number = number_;
+		draw = draw_;
 	}
 	SquareData() {}
 };

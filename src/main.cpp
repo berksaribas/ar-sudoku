@@ -20,6 +20,9 @@ int main() {
 	Mat bw_frame;				// balck-white image
 	VideoCapture video;			// video
 	SquareData* data = new SquareData[81];
+	
+	SudokuSolver solver;
+	int board[9][9];
 
 #if LIFESTREAM
 	video.open(0);
@@ -236,6 +239,9 @@ int main() {
 						// call number recognition program here
 						values[r][c][n] = image2numbers(number, demo_number);
 
+						data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, values[r][c][n], false);
+						board[r][c] = values[r][c][n];
+
 					}
 				}
 
@@ -252,6 +258,8 @@ int main() {
 							for (int m = 0; m < 10; m++) {
 								input.push_back(values[r][c][m]);
 							}
+							int recognized_number = mostFrequent(input);;
+							board[r][c] = recognized_number;
 							cout << mostFrequent(input);	// output recognized numbers
 							cout << "\t";
 						}
@@ -260,8 +268,21 @@ int main() {
 				}
 				n++;
 			}
-			//glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
-			//renderer.render(frame, glm::inverse(matrix), data);
+
+			auto sudoku_data = solver.produce_sudoku_data(board);
+			sudoku_data = solver.solve(sudoku_data);
+			
+			for (int r = 0; r < 9; r++) {
+				for (int c = 0; c < 9; c++) {
+					data[c * 9 + r].number = sudoku_data.board[r][c];
+					if (board[r][c] == 0) {
+						data[c * 9 + r].draw = true;
+					}
+				}
+			}
+
+			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
+			renderer.render(frame, glm::inverse(matrix), data);
 		}
 
 		imshow("Sudoku Solver Interface", frame);
