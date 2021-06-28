@@ -29,6 +29,9 @@ class Renderer {
 public:
 	void init(int width, int height, float fov);
 	void render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data);
+
+	inline GLFWwindow* getWindow() { return window; };
+
 private: 
 	GLFWwindow* window;
 	int width;

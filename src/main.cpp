@@ -1,5 +1,6 @@
 #include "main.h"
 #include "Renderer.h"
+#include "input.h"
 
 using namespace std;
 using namespace cv;
@@ -11,6 +12,12 @@ using namespace cv;
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
 
 const int fps = 30;				// frames per second of the video
+
+/// <summary>
+/// reference to input class
+/// </summary>
+Input* m_pInput = nullptr;
+
 
 int main() {
 	Renderer renderer;
@@ -28,11 +35,12 @@ int main() {
 	video.open(0);
 #endif
 	renderer.init(640, 480, 90);
+	m_pInput = Input::initialize(*renderer.getWindow());
 
 	if (!video.isOpened())
 	{
 		cout << "No camera was found!\n";
-		video.open("SudokuVideo.MP4");			// open prerecorded video
+		video.open("../SudokuVideo.MP4");			// open prerecorded video
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
 			exit(0);
@@ -50,6 +58,34 @@ int main() {
 
 	while (video.read(frame))											// loop through the video for each image
 	{
+		///////////////INPUT 
+		
+		//Example
+		//Called only once when the key is put down
+		if (Input::IsKeyPutDown(GLFW_KEY_UP))
+		{
+			std::cout << "THE UP KEY WAS PRESSED\n";
+		}
+		//Called only once when the key is released and goes up
+		if (Input::IsKeyPutUp(GLFW_KEY_DOWN))
+		{
+			std::cout << "THE DOWN KEY WAS RELEASED\n";
+		}
+		//Called only once when the key is put down: SAME AS line 65
+		if (Input::IsKeyPutDown(GLFW_KEY_RIGHT))
+		{
+			std::cout << "THE RIGHT KEY WAS PRESSED\n";
+		}
+		//Called continuously from the point the key is pressed until the key is releaseduntil the key 
+		if (Input::IsKeyDown(GLFW_KEY_LEFT))
+		{
+			std::cout << "THE LEFT IS PRESSED CONTINUOUSLY\n";
+		}
+		//Update
+		m_pInput->Update();
+		///////////////INPUT 
+
+
 		cvtColor(frame, bw_frame, CV_BGR2GRAY);							// switch to grayscale
 #if ADAPTIVETHRESHOLD													// switch threshold option to get a black-white image
 		adaptiveThreshold(bw_frame, bw_frame, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 33, 5);
@@ -283,13 +319,19 @@ int main() {
 
 			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
 			renderer.render(frame, glm::inverse(matrix), data);
+
+
+			
 		}
 
 		imshow("Sudoku Solver Interface", frame);
 
 		//__debugbreak();
 		if (waitKey(fps) == 27) break;
+
 	}
 
+	m_pInput->destroy();
+	m_pInput = nullptr;
 	return 0;
 }
