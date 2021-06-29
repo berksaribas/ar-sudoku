@@ -58,7 +58,7 @@ int image2numbers(Mat& number, Mat& demo_number) {
 
 int mostFrequent(vector<int> values) {
 	int freq[10] = { 0 };
-	int number = -1;
+	int number = 0;
 	for (int n = 0; n < values.size(); n++) {
 		freq[values.at(n)] ++;
 	}

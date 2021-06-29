@@ -2,6 +2,7 @@
 #include "Renderer.h"
 #include "input.h"
 
+
 using namespace std;
 using namespace cv;
 
@@ -296,7 +297,7 @@ int main() {
 							}
 							int recognized_number = mostFrequent(input);;
 							board[r][c] = recognized_number;
-							cout << mostFrequent(input);	// output recognized numbers
+							cout << recognized_number;	// output recognized numbers
 							cout << "\t";
 						}
 						cout << "\n";
