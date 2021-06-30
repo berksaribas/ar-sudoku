@@ -28,6 +28,7 @@ int main() {
 	Mat bw_frame;				// balck-white image
 	VideoCapture video;			// video
 	SquareData* data = new SquareData[81];
+    int cubePose=40;           // the center position of the navigator
 	
 	SudokuSolver solver;
 	int board[9][9];
@@ -42,6 +43,7 @@ int main() {
 	{
 		cout << "No camera was found!\n";
 		video.open("../SudokuVideo.MP4");			// open prerecorded video
+        //video.open("/Users/yangzonglin/Ar_project/SudokuVideo.MP4"); //for Mac Path
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
 			exit(0);
@@ -65,6 +67,10 @@ int main() {
 		//Called only once when the key is put down
 		if (Input::IsKeyPutDown(GLFW_KEY_UP))
 		{
+            if ( cubePose % 9==0)  //prevent top boarder
+                cubePose+=8;
+            else
+                cubePose--;
 			std::cout << "THE UP KEY WAS PRESSED\n";
 		}
 		//Called only once when the key is released and goes up
@@ -72,11 +78,31 @@ int main() {
 		{
 			std::cout << "THE DOWN KEY WAS RELEASED\n";
 		}
+        if (Input::IsKeyPutDown(GLFW_KEY_DOWN))
+        {
+            if ( cubePose % 9==8) //prevent bottom boarder
+                cubePose-=8;
+            else
+                cubePose++;
+            std::cout << "THE DOWN KEY WAS PRESSED\n";
+        }
 		//Called only once when the key is put down: SAME AS line 65
 		if (Input::IsKeyPutDown(GLFW_KEY_RIGHT))
 		{
+            if (cubePose>=72) //prevent right boarder
+                cubePose-=72;
+            else
+                cubePose+=9;
 			std::cout << "THE RIGHT KEY WAS PRESSED\n";
 		}
+        if (Input::IsKeyPutDown(GLFW_KEY_LEFT))
+        {
+            if (cubePose<=8) //prevent left boarder
+                cubePose+=72;
+            else
+                cubePose-=9;
+            std::cout << "THE LEFT KEY WAS PRESSED\n";
+        }
 		//Called continuously from the point the key is pressed until the key is releaseduntil the key 
 		if (Input::IsKeyDown(GLFW_KEY_LEFT))
 		{
@@ -319,7 +345,7 @@ int main() {
 			}
 
 			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
-			renderer.render(frame, glm::inverse(matrix), data);
+			renderer.render(frame, glm::inverse(matrix), data,cubePose);
 
 
 			

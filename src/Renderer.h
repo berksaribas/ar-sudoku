@@ -28,7 +28,7 @@ struct SquareData {
 class Renderer {
 public:
 	void init(int width, int height, float fov);
-	void render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data);
+    void render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data,int cubePos); 
 
 	inline GLFWwindow* getWindow() { return window; };
 
