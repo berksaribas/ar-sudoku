@@ -29,7 +29,8 @@ int main() {
 	Mat bw_frame;				// balck-white image
 	VideoCapture video;			// video
 	SquareData* data = new SquareData[81];
-	
+    int cubePose=40;           // the center position of the navigator
+
 	SudokuSolver solver;
 	int board[9][9];
 
@@ -43,6 +44,7 @@ int main() {
 	{
 		cout << "No camera was found!\n";
 		video.open("../SudokuVideo.MP4");			// open prerecorded video
+        //video.open("/Users/yangzonglin/Ar_project/SudokuVideo.MP4"); //for Mac Path
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
 			exit(0);
@@ -60,12 +62,16 @@ int main() {
 
 	while (video.read(frame))											// loop through the video for each image
 	{
-		///////////////INPUT 
-		
+		///////////////INPUT
+
 		//Example
 		//Called only once when the key is put down
 		if (Input::IsKeyPutDown(GLFW_KEY_UP))
 		{
+            if ( cubePose % 9==0)  //prevent top boarder
+                cubePose+=8;
+            else
+                cubePose--;
 			std::cout << "THE UP KEY WAS PRESSED\n";
 		}
 		//Called only once when the key is released and goes up
@@ -73,19 +79,39 @@ int main() {
 		{
 			std::cout << "THE DOWN KEY WAS RELEASED\n";
 		}
+        if (Input::IsKeyPutDown(GLFW_KEY_DOWN))
+        {
+            if ( cubePose % 9==8) //prevent bottom boarder
+                cubePose-=8;
+            else
+                cubePose++;
+            std::cout << "THE DOWN KEY WAS PRESSED\n";
+        }
 		//Called only once when the key is put down: SAME AS line 65
 		if (Input::IsKeyPutDown(GLFW_KEY_RIGHT))
 		{
+            if (cubePose>=72) //prevent right boarder
+                cubePose-=72;
+            else
+                cubePose+=9;
 			std::cout << "THE RIGHT KEY WAS PRESSED\n";
 		}
-		//Called continuously from the point the key is pressed until the key is releaseduntil the key 
+        if (Input::IsKeyPutDown(GLFW_KEY_LEFT))
+        {
+            if (cubePose<=8) //prevent left boarder
+                cubePose+=72;
+            else
+                cubePose-=9;
+            std::cout << "THE LEFT KEY WAS PRESSED\n";
+        }
+		//Called continuously from the point the key is pressed until the key is releaseduntil the key
 		if (Input::IsKeyDown(GLFW_KEY_LEFT))
 		{
 			std::cout << "THE LEFT IS PRESSED CONTINUOUSLY\n";
 		}
 		//Update
 		m_pInput->Update();
-		///////////////INPUT 
+		///////////////INPUT
 
 
 		cvtColor(frame, bw_frame, CV_BGR2GRAY);							// switch to grayscale
@@ -101,7 +127,7 @@ int main() {
 		vector<Point> approx_contour;
 		for (int k = 0; k < contours.size(); k++) {
 			approxPolyDP(contours[k], approx_contour, arcLength(contours[k], true) * 0.02, true);	// converting contours to polygons
-			
+
 			Rect Rectangle = boundingRect(approx_contour);
 			if (approx_contour.size() != 4 ||																// filter for quadrangles
 				Rectangle.height < 200 || Rectangle.width < 200 || Rectangle.width > frame.cols - 10 ||		// and minimum size of 200 pixels in width and height
@@ -137,7 +163,7 @@ int main() {
 			Mat Lines(Size(4, 4), CV_32F, Parameters);
 
 			for (int i = 0; i < 4; i++) {
-				
+
 				Point2f delta = (Point2f(corners[(i + 1) % 4] - corners[i])) / 7.0;
 				Point2f direction = Point2f(-delta.y, delta.x);
 				direction = direction / norm(direction);
@@ -253,7 +279,7 @@ int main() {
 				Inters[(i + 1) % 4].y = a[1] + lambda_1 * b[1];
 			}
 			TransMatrix = getPerspectiveTransform(Inters, targetCorners);
-#else		
+#else
 			TransMatrix = getPerspectiveTransform(corners, targetCorners);
 #endif
 			Mat grid(Size(RESOLUTION, RESOLUTION), CV_8UC1);
@@ -272,7 +298,7 @@ int main() {
 						// subimage of the grid containing one number
 						// offset choosen via trial and error
 						grid(Rect(delta * c + 10, delta * r + 10, delta - 15, delta - 13)).copyTo(number);
-						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders 
+						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders
 						cvtColor(number, demo_number, CV_GRAY2BGR);			// for demo purposes (further functions only wor on bw images)
 
 						// call number recognition program here
@@ -310,7 +336,7 @@ int main() {
 
 			auto sudoku_data = solver.produce_sudoku_data(board);
 			sudoku_data = solver.solve(sudoku_data);
-			
+
 			for (int r = 0; r < 9; r++) {
 				for (int c = 0; c < 9; c++) {
 					data[c * 9 + r].number = sudoku_data.board[r][c];
@@ -321,10 +347,10 @@ int main() {
 			}
 
 			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
-			renderer.render(frame, glm::inverse(matrix), data);
-#endif
+			renderer.render(frame, glm::inverse(matrix), data,cubePose);
 
-			
+
+
 		}
 
 		imshow("Sudoku Solver Interface", frame);

@@ -40,7 +40,7 @@ static GLuint matToTexture(const cv::Mat& mat) {
 	return textureID;
 }
 
-void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data)
+void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data, int cubePos)
 {
 	glViewport(0, 0, width, height); // use a screen size of WIDTH x HEIGHT
 
@@ -84,9 +84,6 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 	//Rendering each number
 	for(int i = 0; i < 81; i++)
 	{
-		if (!data[i].draw) {
-			continue;
-		}
 
 		glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
 		glPushMatrix();
@@ -110,15 +107,29 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 		result3 /= result3.z;
 		result4 /= result4.z;
 
-		/* Draw a quad */
-		glBegin(GL_QUADS);
-		glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-		glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
-		glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
-		glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
-
-		glEnd();
-
+        if (i==cubePos)
+        {
+        // here is the code for desinging the navigator
+        glBegin(GL_POLYGON);
+        //glClearColor(0.5, 0.5, 0.5, 1.0);
+        glColor3f(1.f, 0.f, 1.f);
+        glVertex3f(result1.x, result1.y-20.f, 0.0f);
+        glVertex3f(result2.x, result2.y-20.f, 0.0f);
+        glVertex3f((result1.x+result2.x)/2, result2.y, 0.0f);
+        glColor3f(1.f, 1.f, 1.f);
+        glEnd();
+        }
+        if (!data[i].draw) {
+            continue;
+        }
+        /* Draw a quad */
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
+        glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
+        glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
+        glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
+        glEnd();
+        
 		glDisable(GL_TEXTURE_2D);
 
 		glPopMatrix();
@@ -183,6 +194,8 @@ void Renderer::init(int width_, int height_, float fov)
 
 	//Generate textures for numbers
 	for (int i = 0; i < 9; i++) {
+        
+        //number_textures[i] = matToTexture(cv::imread("/Users/yangzonglin/Ar_project/data/" + std::to_string(i + 1) + ".jpg")); //for Mac path
 		number_textures[i] = matToTexture(cv::imread("../data/" + std::to_string(i + 1) + ".jpg"));
 	}
 }
