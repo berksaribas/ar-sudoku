@@ -11,6 +11,7 @@ using namespace cv;
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
+#define NUMBERS 1
 
 const int fps = 30;				// frames per second of the video
 
@@ -259,6 +260,7 @@ int main() {
 			warpPerspective(bw_frame, grid, TransMatrix, Size(RESOLUTION, RESOLUTION));
 			imshow("grid", grid);
 
+#if NUMBERS
 			if (n < 10) {
 
 				Mat number;
@@ -320,7 +322,7 @@ int main() {
 
 			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
 			renderer.render(frame, glm::inverse(matrix), data);
-
+#endif
 
 			
 		}
