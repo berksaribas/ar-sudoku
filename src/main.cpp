@@ -7,11 +7,11 @@ using namespace std;
 using namespace cv;
 
 
-#define LIFESTREAM 1			// use prerecorded video or camera
+#define LIFESTREAM 0			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
-#define NUMBERS 1
+#define NUMBERS 0
 
 const int fps = 30;				// frames per second of the video
 
@@ -43,7 +43,7 @@ int main() {
 	if (!video.isOpened())
 	{
 		cout << "No camera was found!\n";
-		video.open("../SudokuVideo.MP4");			// open prerecorded video
+		video.open("../SudokuVideo2.MP4");			// open prerecorded video
         //video.open("/Users/yangzonglin/Ar_project/SudokuVideo.MP4"); //for Mac Path
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
@@ -130,8 +130,43 @@ int main() {
 
 			Rect Rectangle = boundingRect(approx_contour);
 			if (approx_contour.size() != 4 ||																// filter for quadrangles
-				Rectangle.height < 200 || Rectangle.width < 200 || Rectangle.width > frame.cols - 10 ||		// and minimum size of 200 pixels in width and height
+				Rectangle.height < 100 || Rectangle.width < 100 || Rectangle.width > frame.cols - 10 ||		// and minimum size of 200 pixels in width and height
 				Rectangle.height > frame.rows - 10) continue;												// don't exceed frame boundaries
+			
+			float ratio = norm(approx_contour[0] - approx_contour[1]) / norm(approx_contour[1] - approx_contour[2]); // nearly quadratic
+			if (ratio < 0.8 || ratio > 1.3)continue;
+
+			Mat border_test(Size(50, 200), CV_8UC1);		// looking for grid border-lines
+			Point2f border_position[4];
+			bool noSudokuGrid = false;
+			for (int i = 0; i < 1; i++) {
+				for (int j = 1; j < 3; j++) {
+					border_position[0] = approx_contour[i] + j / 3. * (approx_contour[(i + 1) % 4] - approx_contour[i]) * 0.9;
+					border_position[1] = approx_contour[i] + j / 3. * (approx_contour[(i + 1) % 4] - approx_contour[i]) * 1.1;
+					border_position[2] = approx_contour[i + 2] + (j % 2 + 1) / 3. * (approx_contour[(i + 3) % 4] - approx_contour[i + 2]) * 0.9;
+					border_position[3] = approx_contour[i + 2] + (j % 2 + 1) / 3. * (approx_contour[(i + 3) % 4] - approx_contour[i + 2]) * 1.1;
+
+					Mat TransMatrix(Size(3, 3), CV_32FC1);
+					Point2f targetCorners[4];									// extract rectified sudoku border
+					targetCorners[0] = { -0.5, -0.5 };
+					targetCorners[1] = { 50 - 0.5, -0.5 };
+					targetCorners[2] = { 50 - 0.5, 200 - 0.5 };
+					targetCorners[3] = { -0.5, 200 - 0.5 };
+					TransMatrix = getPerspectiveTransform(border_position, targetCorners);
+					warpPerspective(bw_frame, border_test, TransMatrix, Size(50, 200));
+
+
+					vector<Vec2f> borders;
+					Canny(border_test, border_test, 50, 200, 3);
+					HoughLines(border_test, borders, 2, CV_PI / 360, 150, 0, 0);	// find lines
+					if (borders.size() < 1) {										// break if no line exists
+						noSudokuGrid = true;
+						break;
+					}
+				}
+			}
+			if (noSudokuGrid)continue;
+
 
 			polylines(frame, approx_contour, true, Scalar(0, 0, 255), 1);		// highlight the found quadrangle in the image
 
