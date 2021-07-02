@@ -1,7 +1,7 @@
 #include "main.h"
 #include "Renderer.h"
 #include "input.h"
-
+#include "UIButton.h"
 
 using namespace std;
 using namespace cv;
@@ -11,9 +11,15 @@ using namespace cv;
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
-#define NUMBERS 0
+#define NUMBERS 1
 
 const int fps = 30;				// frames per second of the video
+constexpr int WIN_WIDTH = 640;
+constexpr int WIN_HEIGHT = 480;
+constexpr int WIN_FOV = 90;
+
+constexpr int BTN_WIDTH = 90;
+constexpr int BTN_HEIGHT = 45;
 
 /// <summary>
 /// reference to input class
@@ -21,7 +27,9 @@ const int fps = 30;				// frames per second of the video
 Input* m_pInput = nullptr;
 
 
+
 int main() {
+
 	Renderer renderer;
 	int n = 0;
 	int values[9][9][10];
@@ -34,16 +42,23 @@ int main() {
 	SudokuSolver solver;
 	int board[9][9];
 
+
 #if LIFESTREAM
 	video.open(0);
 #endif
-	renderer.init(640, 480, 90);
+	renderer.init(WIN_WIDTH, WIN_HEIGHT, WIN_FOV);
 	m_pInput = Input::initialize(*renderer.getWindow());
+
+	//Creating buttons
+	UIButton m_BtnConfirm(BTN_TYPE::BTN_CONFIRM, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true));
+	UIButton m_BtnHelp(BTN_TYPE::BTN_HELP, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (2 * BTN_WIDTH) - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true));
+	UIButton m_BtnSolution(BTN_TYPE::BTN_SOLUTION, BTN_CONDITION::BTN_NORMAL, SquareData(BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true));
+	UIButton* m_ArrBtns[BTN_TYPE::BTN_COUNT]{ &m_BtnConfirm, &m_BtnHelp, &m_BtnSolution };
 
 	if (!video.isOpened())
 	{
 		cout << "No camera was found!\n";
-		video.open("../SudokuVideo2.MP4");			// open prerecorded video
+		video.open("../SudokuVideo.MP4");			// open prerecorded video
         //video.open("/Users/yangzonglin/Ar_project/SudokuVideo.MP4"); //for Mac Path
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
@@ -62,6 +77,22 @@ int main() {
 
 	while (video.read(frame))											// loop through the video for each image
 	{
+		//m_BtnConfirm.visibilityToggle(true / false); // function to hide or show a button
+		// BUTTON EXAMPLES
+		if (m_BtnConfirm.manageButton())
+		{
+			std::cout << "CONFIRM BUTTON WAS PRESSED\n";
+		}
+		if (m_BtnHelp.manageButton())
+		{
+			std::cout << "HELP BUTTON WAS PRESSED\n";
+		}
+		if (m_BtnSolution.manageButton())
+		{
+			std::cout << "SOLUTION BUTTON WAS PRESSED\n";
+		}
+
+
 		///////////////INPUT
 
 		//Example
@@ -72,12 +103,6 @@ int main() {
                 cubePose+=8;
             else
                 cubePose--;
-			std::cout << "THE UP KEY WAS PRESSED\n";
-		}
-		//Called only once when the key is released and goes up
-		if (Input::IsKeyPutUp(GLFW_KEY_DOWN))
-		{
-			std::cout << "THE DOWN KEY WAS RELEASED\n";
 		}
         if (Input::IsKeyPutDown(GLFW_KEY_DOWN))
         {
@@ -85,7 +110,6 @@ int main() {
                 cubePose-=8;
             else
                 cubePose++;
-            std::cout << "THE DOWN KEY WAS PRESSED\n";
         }
 		//Called only once when the key is put down: SAME AS line 65
 		if (Input::IsKeyPutDown(GLFW_KEY_RIGHT))
@@ -94,7 +118,6 @@ int main() {
                 cubePose-=72;
             else
                 cubePose+=9;
-			std::cout << "THE RIGHT KEY WAS PRESSED\n";
 		}
         if (Input::IsKeyPutDown(GLFW_KEY_LEFT))
         {
@@ -102,7 +125,6 @@ int main() {
                 cubePose+=72;
             else
                 cubePose-=9;
-            std::cout << "THE LEFT KEY WAS PRESSED\n";
         }
 		//Called continuously from the point the key is pressed until the key is releaseduntil the key
 		if (Input::IsKeyDown(GLFW_KEY_LEFT))
@@ -382,10 +404,9 @@ int main() {
 			}
 
 			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
-			renderer.render(frame, glm::inverse(matrix), data,cubePose);
+			renderer.render(frame, glm::inverse(matrix), data,cubePose, m_ArrBtns);
 #endif
 		}
-
 		imshow("Sudoku Solver Interface", frame);
 
 		//__debugbreak();
