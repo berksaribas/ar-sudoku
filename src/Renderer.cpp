@@ -260,7 +260,7 @@ void Renderer::init(int width_, int height_, float fov)
 	//Generate textures for the buttons
 	for (int i = 0; i < 12; i++) {
 
-		btn_textures[i] = matToTexture(cv::imread("../Art/" + std::to_string(i / 3) + "_" + std::to_string(i%3) + ".png"));
+		btn_textures[i] = matToTexture(cv::imread("../Art/" + std::to_string(i / 3) + "_" + std::to_string(i%3) + ".jpg"));
 	}
 
 	printf("%s\n", glGetString(GL_VERSION));

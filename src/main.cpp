@@ -53,10 +53,11 @@ int main() {
 	m_pInput = Input::initialize(*renderer.getWindow());
 
 	//Creating buttons
-	UIButton m_BtnConfirm(BTN_TYPE::BTN_CONFIRM, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
-	UIButton m_BtnRescan(BTN_TYPE::BTN_RESCAN, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f - BTN_HEIGHT * 1.5, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
-	UIButton m_BtnHelp(BTN_TYPE::BTN_HELP, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (2 * BTN_WIDTH) - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
-	UIButton m_BtnSolution(BTN_TYPE::BTN_SOLUTION, BTN_CONDITION::BTN_NORMAL, SquareData(BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnConfirm(BTN_TYPE::BTN_CONFIRM, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (BTN_WIDTH * 0.5f), WIN_HEIGHT - (BTN_HEIGHT * 0.5f), BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnHelp(BTN_TYPE::BTN_HELP, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (2.0f * BTN_WIDTH) - (BTN_WIDTH * 0.5f), WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnSolution(BTN_TYPE::BTN_SOLUTION, BTN_CONDITION::BTN_NORMAL, SquareData(BTN_WIDTH, WIN_HEIGHT - (BTN_HEIGHT * 0.5f), BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnRescan(BTN_TYPE::BTN_RESCAN, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (BTN_WIDTH * 0.5f), WIN_HEIGHT - (BTN_HEIGHT * 0.5f) - BTN_HEIGHT, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+
 	UIButton* m_ArrBtns[BTN_TYPE::BTN_COUNT]{ &m_BtnConfirm, &m_BtnHelp, &m_BtnSolution, &m_BtnRescan };
 
 	m_BtnConfirm.visibilityToggle(false);
@@ -172,11 +173,7 @@ int main() {
             else
                 cubePose-=9;
         }
-		//Called continuously from the point the key is pressed until the key is releaseduntil the key
-		if (Input::IsKeyDown(GLFW_KEY_LEFT))
-		{
-			std::cout << "THE LEFT IS PRESSED CONTINUOUSLY\n";
-		}
+
 		//Update
 		m_pInput->Update();
 		///////////////INPUT

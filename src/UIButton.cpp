@@ -36,7 +36,8 @@ bool UIButton::manageButton()
 
 	float l_fWidthDiv2 = width * 0.5f;
 	float l_fHeightDiv2 = height * 0.5f;
-	// If mouse pointer is over the button return
+
+	// If mouse pointer is over the button
 	if (l_dMouseXPos >= (x - l_fWidthDiv2) && l_dMouseXPos <= (x + l_fWidthDiv2) &&
 		l_dMouseYPos >= (y - l_fHeightDiv2) && l_dMouseYPos <= (y + l_fHeightDiv2))
 	{
@@ -51,7 +52,7 @@ bool UIButton::manageButton()
 		else if (m_BtnCondition == BTN_CONDITION::BTN_PRESSED && Input::IsMouseBtnPutUp(GLFW_MOUSE_BUTTON_LEFT))
 		{
 			l_bIsBtnSelected = true;
-			m_BtnCondition = BTN_CONDITION::BTN_NORMAL;
+			m_BtnCondition = BTN_CONDITION::BTN_HOVER;
 		}
 	}
 	else
