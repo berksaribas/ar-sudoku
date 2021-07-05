@@ -7,15 +7,15 @@ static GLuint matToTexture(const cv::Mat& mat) {
 	glGenTextures(1, &textureID);
 
 	// Bind to our texture handle
-	glBindTexture(GL_TEXTURE_RECTANGLE, textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
 
 	// Set texture filtering
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Set texture clamping method
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Set incoming texture format to:
 	// GL_BGR       for CV_CAP_OPENNI_BGR_IMAGE,
@@ -28,7 +28,7 @@ static GLuint matToTexture(const cv::Mat& mat) {
 	}
 
 	// Create the texture
-	glTexImage2D(GL_TEXTURE_RECTANGLE,     // Type of texture
+	glTexImage2D(GL_TEXTURE_2D,     // Type of texture
 		0,                 // Pyramid level (for mip-mapping) - 0 is the top level
 		GL_RGB,            // Internal colour format to convert to
 		mat.cols,          // Image width  i.e. 640 for Kinect in standard mode
@@ -61,20 +61,20 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 		glPushMatrix();
 		glLoadIdentity();
 
-		glEnable(GL_TEXTURE_RECTANGLE);
+		glEnable(GL_TEXTURE_2D);
 		GLuint image_tex = matToTexture(image);
-		glBindTexture(GL_TEXTURE_RECTANGLE, image_tex);
+		glBindTexture(GL_TEXTURE_2D, image_tex);
 
 		/* Draw a quad */
 		glBegin(GL_QUADS);
 		glTexCoord2f(0, 0); glVertex3f(0, 0, 0);
-		glTexCoord2f(0, image.rows); glVertex3f(0, height, 0);
-		glTexCoord2f(image.cols, image.rows); glVertex3f(width, height, 0);
-		glTexCoord2f(image.cols, 0); glVertex3f(width, 0, 0);
+		glTexCoord2f(0, 1.0); glVertex3f(0, height, 0);
+		glTexCoord2f(1.0, 1.0); glVertex3f(width, height, 0);
+		glTexCoord2f(1.0, 0); glVertex3f(width, 0, 0);
 		glEnd();
 
 		glDeleteTextures(1, &image_tex);
-		glDisable(GL_TEXTURE_RECTANGLE);
+		glDisable(GL_TEXTURE_2D);
 		
 		glPopMatrix();
 
@@ -96,8 +96,8 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 			glPushMatrix();
 			glLoadIdentity();
 
-			glEnable(GL_TEXTURE_RECTANGLE);
-			glBindTexture(GL_TEXTURE_RECTANGLE, number_textures[data[i].number - 1]);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, number_textures[data[i].number - 1]);
 
 			auto result1 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y, 1.0f) * transformation_matrix;
 			auto result2 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y, 1.0f) * transformation_matrix;
@@ -139,13 +139,13 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 
 			/* Draw a quad */
 			glBegin(GL_QUADS);
-			glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-			glTexCoord2f(64, 0); glVertex3f(result2.x, result2.y, 0.0f);
-			glTexCoord2f(64, 64); glVertex3f(result3.x, result3.y, 0.0f);
-			glTexCoord2f(0, 64); glVertex3f(result4.x, result4.y, 0.0f);
+			glTexCoord2f(0.0, 0.0); glVertex3f(result1.x, result1.y, 0.0f);
+			glTexCoord2f(1.0, 0.0); glVertex3f(result2.x, result2.y, 0.0f);
+			glTexCoord2f(1.0, 1.0); glVertex3f(result3.x, result3.y, 0.0f);
+			glTexCoord2f(0.0, 1.0); glVertex3f(result4.x, result4.y, 0.0f);
 			glEnd();
 
-			glDisable(GL_TEXTURE_RECTANGLE);
+			glDisable(GL_TEXTURE_2D);
 
 			glPopMatrix();
 
@@ -171,8 +171,8 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 				continue;
 			}
 
-			glEnable(GL_TEXTURE_RECTANGLE);
-			glBindTexture(GL_TEXTURE_RECTANGLE, btn_textures[(l_btnCurrent.m_BtnType * BTN_CONDITION::BTN_HIDDEN) + l_btnCurrent.m_BtnCondition]);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, btn_textures[(l_btnCurrent.m_BtnType * BTN_CONDITION::BTN_HIDDEN) + l_btnCurrent.m_BtnCondition]);
 
 			const float l_fWidthDiv2 = l_btnCurrent.width * 0.5f;
 			const float l_fHeightDiv2 = l_btnCurrent.height * 0.5f;
@@ -184,12 +184,12 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 			/* Draw a quad */
 			glBegin(GL_QUADS);
 			glTexCoord2f(0.0, 0.0); glVertex3f(result1.x, result1.y, 0.0f);
-			glTexCoord2f(195, 0.0); glVertex3f(result2.x, result2.y, 0.0f);
-			glTexCoord2f(195.0, 60.0); glVertex3f(result3.x, result3.y, 0.0f);
-			glTexCoord2f(0.0, 60.0); glVertex3f(result4.x, result4.y, 0.0f);
+			glTexCoord2f(1.0, 0.0); glVertex3f(result2.x, result2.y, 0.0f);
+			glTexCoord2f(1.0, 1.0); glVertex3f(result3.x, result3.y, 0.0f);
+			glTexCoord2f(0.0, 1.0); glVertex3f(result4.x, result4.y, 0.0f);
 			glEnd();
 
-			glDisable(GL_TEXTURE_RECTANGLE);
+			glDisable(GL_TEXTURE_2D);
 		}
 		glPopMatrix();
 
