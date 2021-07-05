@@ -183,10 +183,10 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 
 			/* Draw a quad */
 			glBegin(GL_QUADS);
-			glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-			glTexCoord2f(195, 0); glVertex3f(result2.x, result2.y, 0.0f);
-			glTexCoord2f(195, 60); glVertex3f(result3.x, result3.y, 0.0f);
-			glTexCoord2f(0, 60); glVertex3f(result4.x, result4.y, 0.0f);
+			glTexCoord2f(0.0, 0.0); glVertex3f(result1.x, result1.y, 0.0f);
+			glTexCoord2f(195, 0.0); glVertex3f(result2.x, result2.y, 0.0f);
+			glTexCoord2f(195.0, 60.0); glVertex3f(result3.x, result3.y, 0.0f);
+			glTexCoord2f(0.0, 60.0); glVertex3f(result4.x, result4.y, 0.0f);
 			glEnd();
 
 			glDisable(GL_TEXTURE_RECTANGLE);
