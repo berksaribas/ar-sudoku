@@ -7,15 +7,15 @@ static GLuint matToTexture(const cv::Mat& mat) {
 	glGenTextures(1, &textureID);
 
 	// Bind to our texture handle
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	glBindTexture(GL_TEXTURE_RECTANGLE, textureID);
 
 	// Set texture filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Set texture clamping method
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Set incoming texture format to:
 	// GL_BGR       for CV_CAP_OPENNI_BGR_IMAGE,
@@ -28,7 +28,7 @@ static GLuint matToTexture(const cv::Mat& mat) {
 	}
 
 	// Create the texture
-	glTexImage2D(GL_TEXTURE_2D,     // Type of texture
+	glTexImage2D(GL_TEXTURE_RECTANGLE,     // Type of texture
 		0,                 // Pyramid level (for mip-mapping) - 0 is the top level
 		GL_RGB,            // Internal colour format to convert to
 		mat.cols,          // Image width  i.e. 640 for Kinect in standard mode
@@ -61,20 +61,20 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 		glPushMatrix();
 		glLoadIdentity();
 
-		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_RECTANGLE);
 		GLuint image_tex = matToTexture(image);
-		glBindTexture(GL_TEXTURE_2D, image_tex);
+		glBindTexture(GL_TEXTURE_RECTANGLE, image_tex);
 
 		/* Draw a quad */
 		glBegin(GL_QUADS);
 		glTexCoord2f(0, 0); glVertex3f(0, 0, 0);
-		glTexCoord2f(0, 1); glVertex3f(0, height, 0);
-		glTexCoord2f(1, 1); glVertex3f(width, height, 0);
-		glTexCoord2f(1, 0); glVertex3f(width, 0, 0);
+		glTexCoord2f(0, image.rows); glVertex3f(0, height, 0);
+		glTexCoord2f(image.cols, image.rows); glVertex3f(width, height, 0);
+		glTexCoord2f(image.cols, 0); glVertex3f(width, 0, 0);
 		glEnd();
 
 		glDeleteTextures(1, &image_tex);
-		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_RECTANGLE);
 		
 		glPopMatrix();
 
@@ -96,8 +96,8 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 			glPushMatrix();
 			glLoadIdentity();
 
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, number_textures[data[i].number - 1]);
+			glEnable(GL_TEXTURE_RECTANGLE);
+			glBindTexture(GL_TEXTURE_RECTANGLE, number_textures[data[i].number - 1]);
 
 			auto result1 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y, 1.0f) * transformation_matrix;
 			auto result2 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y, 1.0f) * transformation_matrix;
@@ -140,12 +140,12 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 			/* Draw a quad */
 			glBegin(GL_QUADS);
 			glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-			glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
-			glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
-			glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
+			glTexCoord2f(64, 0); glVertex3f(result2.x, result2.y, 0.0f);
+			glTexCoord2f(64, 64); glVertex3f(result3.x, result3.y, 0.0f);
+			glTexCoord2f(0, 64); glVertex3f(result4.x, result4.y, 0.0f);
 			glEnd();
 
-			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_RECTANGLE);
 
 			glPopMatrix();
 
@@ -155,34 +155,47 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 	}
 
 	//Render Buttons
-	for (int l_iBtnIndex = 0; l_iBtnIndex < 3; l_iBtnIndex++)
 	{
-		UIButton& l_btnCurrent = *a_pARButton[l_iBtnIndex];
-		if (!l_btnCurrent.draw) {
-			continue;
+		glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
+		glPushMatrix();
+		glLoadIdentity();
+		glOrtho(0.0, width, height, 0.0, 0.0, 100.0);
+
+		glMatrixMode(GL_MODELVIEW);    // Set the matrix mode to object modeling
+		glPushMatrix();
+		glLoadIdentity();
+		for (int l_iBtnIndex = 0; l_iBtnIndex < 4; l_iBtnIndex++)
+		{
+			UIButton& l_btnCurrent = *a_pARButton[l_iBtnIndex];
+			if (!l_btnCurrent.is_visible) {
+				continue;
+			}
+
+			glEnable(GL_TEXTURE_RECTANGLE);
+			glBindTexture(GL_TEXTURE_RECTANGLE, btn_textures[(l_btnCurrent.m_BtnType * BTN_CONDITION::BTN_HIDDEN) + l_btnCurrent.m_BtnCondition]);
+
+			const float l_fWidthDiv2 = l_btnCurrent.width * 0.5f;
+			const float l_fHeightDiv2 = l_btnCurrent.height * 0.5f;
+			auto result1 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
+			auto result2 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
+			auto result3 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
+			auto result4 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
+
+			/* Draw a quad */
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
+			glTexCoord2f(195, 0); glVertex3f(result2.x, result2.y, 0.0f);
+			glTexCoord2f(195, 60); glVertex3f(result3.x, result3.y, 0.0f);
+			glTexCoord2f(0, 60); glVertex3f(result4.x, result4.y, 0.0f);
+			glEnd();
+
+			glDisable(GL_TEXTURE_RECTANGLE);
 		}
+		glPopMatrix();
 
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, btn_textures[(l_btnCurrent.m_BtnType * BTN_CONDITION::BTN_HIDDEN) + l_btnCurrent.m_BtnCondition]);
-
-		const float l_fWidthDiv2 = l_btnCurrent.width * 0.5f;
-		const float l_fHeightDiv2 = l_btnCurrent.height * 0.5f;
-		auto result1 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
-		auto result2 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
-		auto result3 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
-		auto result4 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
-
-		/* Draw a quad */
-		glBegin(GL_QUADS);
-		glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-		glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
-		glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
-		glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
-		glEnd();
-
-		glDisable(GL_TEXTURE_2D);
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
 	}
-
 		
 	// Swap front and back buffers
 	glfwSwapBuffers(window);
@@ -198,8 +211,8 @@ void Renderer::init(int width_, int height_, float fov)
 	}
 
 	//OpenGL version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
 	window = glfwCreateWindow(width_, height_, "OpenGL Sudoku Renderer", NULL, NULL);
 	width = width_;
@@ -244,12 +257,11 @@ void Renderer::init(int width_, int height_, float fov)
 		number_textures[i] = matToTexture(cv::imread("../data/" + std::to_string(i + 1) + ".jpg"));
 	}
 
-	//Generate textures for numbers
-	for (int i = 0; i < 9; i++) {
+	//Generate textures for the buttons
+	for (int i = 0; i < 12; i++) {
 
 		btn_textures[i] = matToTexture(cv::imread("../Art/" + std::to_string(i / 3) + "_" + std::to_string(i%3) + ".png"));
 	}
 
-	//Generate textures for the buttons
-
+	printf("%s\n", glGetString(GL_VERSION));
 }

@@ -26,30 +26,11 @@ constexpr int BTN_HEIGHT = 45;
 /// </summary>
 Input* m_pInput = nullptr;
 
-SquareData* data = new SquareData[81];
+SquareData* square_data = new SquareData[81];
 SudokuData solved_sudoku;
 ProgramState state = ProgramState::SCANNING;
 SudokuSolver solver;
 int board[9][9];
-
-void on_confirmed() {
-	solved_sudoku = solver.produce_sudoku_data(board);
-	solved_sudoku = solver.solve(solved_sudoku);
-	state = ProgramState::CONFIRMED;
-}
-
-void on_show_solution() {
-
-}
-
-void on_show_hint() {
-	
-}
-
-void on_retry_scan() {
-	//TODO
-}
-
 
 int main() {
 
@@ -72,10 +53,16 @@ int main() {
 	m_pInput = Input::initialize(*renderer.getWindow());
 
 	//Creating buttons
-	UIButton m_BtnConfirm(BTN_TYPE::BTN_CONFIRM, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true));
-	UIButton m_BtnHelp(BTN_TYPE::BTN_HELP, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (2 * BTN_WIDTH) - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true));
-	UIButton m_BtnSolution(BTN_TYPE::BTN_SOLUTION, BTN_CONDITION::BTN_NORMAL, SquareData(BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true));
-	UIButton* m_ArrBtns[BTN_TYPE::BTN_COUNT]{ &m_BtnConfirm, &m_BtnHelp, &m_BtnSolution };
+	UIButton m_BtnConfirm(BTN_TYPE::BTN_CONFIRM, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnRescan(BTN_TYPE::BTN_RESCAN, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f - BTN_HEIGHT * 1.5, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnHelp(BTN_TYPE::BTN_HELP, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (2 * BTN_WIDTH) - BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton m_BtnSolution(BTN_TYPE::BTN_SOLUTION, BTN_CONDITION::BTN_NORMAL, SquareData(BTN_WIDTH * 0.5f, WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
+	UIButton* m_ArrBtns[BTN_TYPE::BTN_COUNT]{ &m_BtnConfirm, &m_BtnHelp, &m_BtnSolution, &m_BtnRescan };
+
+	m_BtnConfirm.visibilityToggle(false);
+	m_BtnHelp.visibilityToggle(false);
+	m_BtnSolution.visibilityToggle(false);
+	m_BtnRescan.visibilityToggle(false);
 
 	if (!video.isOpened())
 	{
@@ -99,21 +86,58 @@ int main() {
 
 	while (video.read(frame))											// loop through the video for each image
 	{
-		//m_BtnConfirm.visibilityToggle(true / false); // function to hide or show a button
-		// BUTTON EXAMPLES
+		//Confirm the board -> solve sudoku
 		if (m_BtnConfirm.manageButton())
 		{
-			std::cout << "CONFIRM BUTTON WAS PRESSED\n";
+			solved_sudoku = solver.produce_sudoku_data(board);
+			solved_sudoku = solver.solve(solved_sudoku);
+
+			if (solved_sudoku.answer) {
+				for (int r = 0; r < 9; r++) {
+					for (int c = 0; c < 9; c++) {
+						square_data[c * 9 + r].number = solved_sudoku.board[r][c];
+					}
+				}
+
+				state = ProgramState::CONFIRMED;
+				m_BtnConfirm.visibilityToggle(false);
+				m_BtnHelp.visibilityToggle(true);
+				m_BtnSolution.visibilityToggle(true);
+			}
+			else {
+				state = ProgramState::SCANNING;
+				n = 0;
+				m_BtnHelp.visibilityToggle(false);
+				m_BtnSolution.visibilityToggle(false);
+				m_BtnConfirm.visibilityToggle(false);
+			}
+
 		}
+		//Show single solution
 		if (m_BtnHelp.manageButton())
 		{
-			std::cout << "HELP BUTTON WAS PRESSED\n";
+			square_data[cubePose].is_visible = true;
 		}
+		//Show the solution
 		if (m_BtnSolution.manageButton())
 		{
-			std::cout << "SOLUTION BUTTON WAS PRESSED\n";
+			for (int r = 0; r < 9; r++) {
+				for (int c = 0; c < 9; c++) {
+					square_data[c * 9 + r].is_visible = true;
+				}
+			}
+			m_BtnHelp.visibilityToggle(false);
+			m_BtnSolution.visibilityToggle(false);
 		}
-
+		//Rescan
+		if (m_BtnRescan.manageButton())
+		{
+			state = ProgramState::SCANNING;
+			n = 0;
+			m_BtnHelp.visibilityToggle(false);
+			m_BtnSolution.visibilityToggle(false);
+			m_BtnConfirm.visibilityToggle(false);
+		}
 
 		///////////////INPUT
 
@@ -407,22 +431,21 @@ int main() {
 						cout << "\n";
 					}
 
-					//solved_sudoku = solver.produce_sudoku_data(board);
-					//solved_sudoku = solver.solve(solved_sudoku);
-
 					for (int r = 0; r < 9; r++) {
 						for (int c = 0; c < 9; c++) {
-							data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, board[r][c], true, false);
+							square_data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, board[r][c], true, false);
 							if (board[r][c] == 0) {
-								data[c * 9 + r].is_provided = false;
+								square_data[c * 9 + r].is_provided = false;
 							}
 							else {
-								data[c * 9 + r].is_visible = true;
+								square_data[c * 9 + r].is_visible = true;
 							}
 						}
 					}
 
 					state = ProgramState::SCANNED;
+					m_BtnConfirm.visibilityToggle(true);
+					m_BtnRescan.visibilityToggle(true);
 				}
 				n++;
 			}
@@ -436,7 +459,7 @@ int main() {
 		}
 		else {
 			glm::mat3 matrix = glm::make_mat3((double*)TransMatrix.data);
-			renderer.render(recent_sudoku, glm::inverse(matrix), data, cubePose, m_ArrBtns);
+			renderer.render(recent_sudoku, glm::inverse(matrix), square_data, cubePose, m_ArrBtns);
 		}
 
 		//__debugbreak();

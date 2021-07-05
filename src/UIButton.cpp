@@ -11,7 +11,7 @@ UIButton::UIButton(BTN_TYPE a_BtnType, BTN_CONDITION a_BtnCondition, SquareData&
 // Is the button visible
 bool UIButton::isBtnShown()
 { 
-	return draw;;
+	return is_visible;
 };
 
 void UIButton::visibilityToggle(bool a_bIsVisible)
@@ -24,11 +24,11 @@ bool UIButton::manageButton()
 	bool l_bIsBtnSelected = false;
 	if(m_BtnCondition == BTN_HIDDEN)
 	{
-		draw = false;
+		is_visible = false;
 		return l_bIsBtnSelected;
 	}
 
-	draw = true;
+	is_visible = true;
 
 	double l_dMouseXPos = 0.0f;
 	double l_dMouseYPos = 0.0f;
