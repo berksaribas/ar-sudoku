@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "UIButton.h"
 
 static GLuint matToTexture(const cv::Mat& mat) {
 	// Generate a number for our textureID's unique handle
@@ -40,7 +41,7 @@ static GLuint matToTexture(const cv::Mat& mat) {
 	return textureID;
 }
 
-void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data, int cubePos)
+void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data, int cubePos, UIButton** a_pARButton)
 {
 	glViewport(0, 0, width, height); // use a screen size of WIDTH x HEIGHT
 
@@ -153,6 +154,35 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 		}
 	}
 
+	//Render Buttons
+	for (int l_iBtnIndex = 0; l_iBtnIndex < 3; l_iBtnIndex++)
+	{
+		UIButton& l_btnCurrent = *a_pARButton[l_iBtnIndex];
+		if (!l_btnCurrent.draw) {
+			continue;
+		}
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, btn_textures[(l_btnCurrent.m_BtnType * BTN_CONDITION::BTN_HIDDEN) + l_btnCurrent.m_BtnCondition]);
+
+		const float l_fWidthDiv2 = l_btnCurrent.width * 0.5f;
+		const float l_fHeightDiv2 = l_btnCurrent.height * 0.5f;
+		auto result1 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
+		auto result2 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
+		auto result3 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
+		auto result4 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
+
+		/* Draw a quad */
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
+		glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
+		glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
+		glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
+		glEnd();
+
+		glDisable(GL_TEXTURE_2D);
+	}
+
 		
 	// Swap front and back buffers
 	glfwSwapBuffers(window);
@@ -213,4 +243,13 @@ void Renderer::init(int width_, int height_, float fov)
         //number_textures[i] = matToTexture(cv::imread("/Users/yangzonglin/Ar_project/data/" + std::to_string(i + 1) + ".jpg")); //for Mac path
 		number_textures[i] = matToTexture(cv::imread("../data/" + std::to_string(i + 1) + ".jpg"));
 	}
+
+	//Generate textures for numbers
+	for (int i = 0; i < 9; i++) {
+
+		btn_textures[i] = matToTexture(cv::imread("../Art/" + std::to_string(i / 3) + "_" + std::to_string(i%3) + ".png"));
+	}
+
+	//Generate textures for the buttons
+
 }

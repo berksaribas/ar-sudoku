@@ -27,10 +27,11 @@ struct SquareData {
 	SquareData() {}
 };
 
+class UIButton;
 class Renderer {
 public:
 	void init(int width, int height, float fov);
-    void render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data,int cubePos); 
+    void render(const cv::Mat& image, glm::mat3 transformation_matrix, SquareData* data,int cubePos, UIButton** a_pARButton);
 
 	inline GLFWwindow* getWindow() { return window; };
 
@@ -39,4 +40,6 @@ private:
 	int width;
 	int height;
 	GLuint number_textures[9];
+
+	GLuint btn_textures[9];
 };
