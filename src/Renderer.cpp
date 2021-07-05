@@ -152,17 +152,17 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 
 		const float l_fWidthDiv2 = l_btnCurrent.width * 0.5f;
 		const float l_fHeightDiv2 = l_btnCurrent.height * 0.5f;
-		auto result1 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
-		auto result2 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);// *transformation_matrix;
-		auto result3 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
-		auto result4 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);// *transformation_matrix;
+		auto result1 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);
+		auto result2 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y - l_fHeightDiv2, 1.0f);
+		auto result3 = glm::vec3(l_btnCurrent.x + l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);
+		auto result4 = glm::vec3(l_btnCurrent.x - l_fWidthDiv2, l_btnCurrent.y + l_fHeightDiv2, 1.0f);
 
 		/* Draw a quad */
 		glBegin(GL_QUADS);
-		glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-		glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
-		glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
-		glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(result1.x, result1.y, 0.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(result2.x, result2.y, 0.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(result3.x, result3.y, 0.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(result4.x, result4.y, 0.0f);
 		glEnd();
 
 		glDisable(GL_TEXTURE_2D);
@@ -229,12 +229,9 @@ void Renderer::init(int width_, int height_, float fov)
 		number_textures[i] = matToTexture(cv::imread("../data/" + std::to_string(i + 1) + ".jpg"));
 	}
 
-	//Generate textures for numbers
+	//Generate textures for the buttons
 	for (int i = 0; i < 9; i++) {
 
-		btn_textures[i] = matToTexture(cv::imread("../Art/" + std::to_string(i / 3) + "_" + std::to_string(i%3) + ".png"));
+		btn_textures[i] = matToTexture(cv::imread("../Art/" + std::to_string(i / 3) + "_" + std::to_string(i%3) + ".jpg"));
 	}
-
-	//Generate textures for the buttons
-
 }
