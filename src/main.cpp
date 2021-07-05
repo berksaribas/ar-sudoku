@@ -11,7 +11,7 @@ using namespace cv;
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
-#define NUMBERS 0
+#define NUMBERS 1
 
 const int fps = 30;				// frames per second of the video
 
@@ -20,6 +20,29 @@ const int fps = 30;				// frames per second of the video
 /// </summary>
 Input* m_pInput = nullptr;
 
+SquareData* data = new SquareData[81];
+SudokuData solved_sudoku;
+ProgramState state = ProgramState::SCANNING;
+SudokuSolver solver;
+int board[9][9];
+
+void on_confirmed() {
+	solved_sudoku = solver.produce_sudoku_data(board);
+	solved_sudoku = solver.solve(solved_sudoku);
+	state = ProgramState::CONFIRMED;
+}
+
+void on_show_solution() {
+
+}
+
+void on_show_hint() {
+	
+}
+
+void on_retry_scan() {
+	//TODO
+}
 
 int main() {
 	Renderer renderer;
@@ -28,11 +51,10 @@ int main() {
 	Mat frame;					// image
 	Mat bw_frame;				// balck-white image
 	VideoCapture video;			// video
-	SquareData* data = new SquareData[81];
     int cubePose=40;           // the center position of the navigator
 
-	SudokuSolver solver;
-	int board[9][9];
+	Mat TransMatrix(Size(3, 3), CV_32FC1);
+	Mat recent_sudoku;
 
 #if LIFESTREAM
 	video.open(0);
@@ -43,7 +65,7 @@ int main() {
 	if (!video.isOpened())
 	{
 		cout << "No camera was found!\n";
-		video.open("../SudokuVideo2.MP4");			// open prerecorded video
+		video.open("../SudokuVideo.MP4");			// open prerecorded video
         //video.open("/Users/yangzonglin/Ar_project/SudokuVideo.MP4"); //for Mac Path
 		if (!video.isOpened()) {
 			cout << "No video!" << endl;
@@ -176,7 +198,7 @@ int main() {
 			targetCorners[2] = { RESOLUTION - 0.5, RESOLUTION - 0.5 };
 			targetCorners[3] = { -0.5, RESOLUTION - 0.5 };
 
-			Mat TransMatrix(Size(3, 3), CV_32FC1);
+			
 			Point2f corners[4];											// finding the up left corner of the sudoku grid
 			int minWeight = 1e5;
 			int minWeightIndex;
@@ -314,6 +336,7 @@ int main() {
 				Inters[(i + 1) % 4].y = a[1] + lambda_1 * b[1];
 			}
 			TransMatrix = getPerspectiveTransform(Inters, targetCorners);
+			recent_sudoku = frame.clone();
 #else
 			TransMatrix = getPerspectiveTransform(corners, targetCorners);
 #endif
@@ -338,10 +361,6 @@ int main() {
 
 						// call number recognition program here
 						values[r][c][n] = image2numbers(number, demo_number);
-
-						data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, values[r][c][n], false);
-						board[r][c] = values[r][c][n];
-
 					}
 				}
 
@@ -365,28 +384,39 @@ int main() {
 						}
 						cout << "\n";
 					}
+
+					//solved_sudoku = solver.produce_sudoku_data(board);
+					//solved_sudoku = solver.solve(solved_sudoku);
+
+					for (int r = 0; r < 9; r++) {
+						for (int c = 0; c < 9; c++) {
+							data[c * 9 + r] = SquareData(delta * c + 10, delta * r + 10, delta - 15, delta - 13, board[r][c], true, false);
+							if (board[r][c] == 0) {
+								data[c * 9 + r].is_provided = false;
+							}
+							else {
+								data[c * 9 + r].is_visible = true;
+							}
+						}
+					}
+
+					state = ProgramState::SCANNED;
 				}
 				n++;
 			}
-
-			auto sudoku_data = solver.produce_sudoku_data(board);
-			sudoku_data = solver.solve(sudoku_data);
-
-			for (int r = 0; r < 9; r++) {
-				for (int c = 0; c < 9; c++) {
-					data[c * 9 + r].number = sudoku_data.board[r][c];
-					if (board[r][c] == 0) {
-						data[c * 9 + r].draw = true;
-					}
-				}
-			}
-
-			glm::mat3 matrix = glm::make_mat3((double*) TransMatrix.data);
-			renderer.render(frame, glm::inverse(matrix), data,cubePose);
 #endif
 		}
 
 		imshow("Sudoku Solver Interface", frame);
+
+		if (recent_sudoku.empty() || state == ProgramState::SCANNING) {
+			glm::mat3 matrix = glm::make_mat3((double*)TransMatrix.data);
+			renderer.render(frame, glm::inverse(matrix), nullptr, cubePose);
+		}
+		else {
+			glm::mat3 matrix = glm::make_mat3((double*)TransMatrix.data);
+			renderer.render(recent_sudoku, glm::inverse(matrix), data, cubePose);
+		}
 
 		//__debugbreak();
 		if (waitKey(fps) == 27) break;

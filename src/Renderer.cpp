@@ -82,60 +82,75 @@ void Renderer::render(const cv::Mat& image, glm::mat3 transformation_matrix, Squ
 	}
 
 	//Rendering each number
-	for(int i = 0; i < 81; i++)
-	{
+	if (data != nullptr) {
+		for (int i = 0; i < 81; i++)
+		{
 
-		glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
-		glPushMatrix();
-		glLoadIdentity();
-		glOrtho(0.0, width, height, 0.0, 0.0, 100.0);
+			glMatrixMode(GL_PROJECTION);     // Make a simple 2D projection on the entire window
+			glPushMatrix();
+			glLoadIdentity();
+			glOrtho(0.0, width, height, 0.0, 0.0, 100.0);
 
-		glMatrixMode(GL_MODELVIEW);    // Set the matrix mode to object modeling
-		glPushMatrix();
-		glLoadIdentity();
+			glMatrixMode(GL_MODELVIEW);    // Set the matrix mode to object modeling
+			glPushMatrix();
+			glLoadIdentity();
 
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, number_textures[data[i].number - 1]);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, number_textures[data[i].number - 1]);
 
-		auto result1 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y, 1.0f) * transformation_matrix;
-		auto result2 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y, 1.0f) * transformation_matrix;
-		auto result3 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y + data[i].height, 1.0f) * transformation_matrix;
-		auto result4 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y + data[i].height, 1.0f) * transformation_matrix;
-		
-		result1 /= result1.z;
-		result2 /= result2.z;
-		result3 /= result3.z;
-		result4 /= result4.z;
+			auto result1 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y, 1.0f) * transformation_matrix;
+			auto result2 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y, 1.0f) * transformation_matrix;
+			auto result3 = glm::vec3(-0.5 + data[i].x + data[i].width, -0.5 + data[i].y + data[i].height, 1.0f) * transformation_matrix;
+			auto result4 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y + data[i].height, 1.0f) * transformation_matrix;
 
-        if (i==cubePos)
-        {
-        // here is the code for desinging the navigator
-        glBegin(GL_POLYGON);
-        //glClearColor(0.5, 0.5, 0.5, 1.0);
-        glColor3f(1.f, 0.f, 1.f);
-        glVertex3f(result1.x, result1.y-20.f, 0.0f);
-        glVertex3f(result2.x, result2.y-20.f, 0.0f);
-        glVertex3f((result1.x+result2.x)/2, result2.y, 0.0f);
-        glColor3f(1.f, 1.f, 1.f);
-        glEnd();
-        }
-        if (!data[i].draw) {
-            continue;
-        }
-        /* Draw a quad */
-        glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
-        glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
-        glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
-        glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
-        glEnd();
-        
-		glDisable(GL_TEXTURE_2D);
+			result1 /= result1.z;
+			result2 /= result2.z;
+			result3 /= result3.z;
+			result4 /= result4.z;
 
-		glPopMatrix();
+			if (i == cubePos)
+			{
+				// here is the code for desinging the navigator
+				glBegin(GL_POLYGON);
+				//glClearColor(0.5, 0.5, 0.5, 1.0);
+				glColor3f(1.f, 0.f, 1.f);
+				glVertex3f(result1.x, result1.y - 20.f, 0.0f);
+				glVertex3f(result2.x, result2.y - 20.f, 0.0f);
+				glVertex3f((result1.x + result2.x) / 2, result2.y, 0.0f);
+				glColor3f(1.f, 1.f, 1.f);
+				glEnd();
+			}
+			if (!data[i].is_visible) {
+				continue;
+			}
 
-		glMatrixMode(GL_PROJECTION);
-		glPopMatrix();
+			if (data[i].is_provided) {
+				result1 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y, 1.0f) * transformation_matrix;
+				result2 = glm::vec3(-0.5 + data[i].x + data[i].width / 2, -0.5 + data[i].y, 1.0f) * transformation_matrix;
+				result3 = glm::vec3(-0.5 + data[i].x + data[i].width / 2, -0.5 + data[i].y + data[i].height / 2, 1.0f) * transformation_matrix;
+				result4 = glm::vec3(-0.5 + data[i].x, -0.5 + data[i].y + data[i].height / 2, 1.0f) * transformation_matrix;
+
+				result1 /= result1.z;
+				result2 /= result2.z;
+				result3 /= result3.z;
+				result4 /= result4.z;
+			}
+
+			/* Draw a quad */
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 0); glVertex3f(result1.x, result1.y, 0.0f);
+			glTexCoord2f(1, 0); glVertex3f(result2.x, result2.y, 0.0f);
+			glTexCoord2f(1, 1); glVertex3f(result3.x, result3.y, 0.0f);
+			glTexCoord2f(0, 1); glVertex3f(result4.x, result4.y, 0.0f);
+			glEnd();
+
+			glDisable(GL_TEXTURE_2D);
+
+			glPopMatrix();
+
+			glMatrixMode(GL_PROJECTION);
+			glPopMatrix();
+		}
 	}
 
 		

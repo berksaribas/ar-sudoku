@@ -10,6 +10,10 @@
 using namespace std;
 using namespace cv;
 
+enum ProgramState {
+	SCANNING, SCANNED, CONFIRMED
+};
+
 int image2numbers(Mat& number, Mat& demo_number);
 int mostFrequent(vector<int> values);
 
