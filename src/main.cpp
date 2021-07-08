@@ -6,7 +6,6 @@
 using namespace std;
 using namespace cv;
 
-
 #define LIFESTREAM 0			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
@@ -14,29 +13,26 @@ using namespace cv;
 #define NUMBERS 1
 
 const int fps = 30;				// frames per second of the video
-constexpr int WIN_WIDTH = 640;
-constexpr int WIN_HEIGHT = 480;
-constexpr int WIN_FOV = 90;
+constexpr int WIN_WIDTH = 640;	// window width
+constexpr int WIN_HEIGHT = 480;	// window height
+constexpr int WIN_FOV = 90;		// fov for the renderer (perspective projection)
 
-constexpr int BTN_WIDTH = 90;
-constexpr int BTN_HEIGHT = 45;
+constexpr int BTN_WIDTH = 90;	// button width
+constexpr int BTN_HEIGHT = 45;	// button height
 
-/// <summary>
-/// reference to input class
-/// </summary>
 Input* m_pInput = nullptr;
 
-SquareData* square_data = new SquareData[81];
-SudokuData solved_sudoku;
-ProgramState state = ProgramState::SCANNING;
-SudokuSolver solver;
-int board[9][9];
+SquareData* square_data = new SquareData[81];	//This is used to feed the renderer
+SudokuData solved_sudoku;						//Our SudokuSolver works with SudokuData
+ProgramState state = ProgramState::SCANNING;	//The current state of the program. SCANNING -> SCANNED -> CONFIRMED -> SOLVED
+SudokuSolver solver;							//This is the sudoku solver instance
+int board[9][9];								//Array to keep recognized numbers
 
 int main() {
 
 	Renderer renderer;
 	int n = 0;
-	int values[9][9][10];
+	int values[9][9][10];		
 	Mat frame;					// image
 	Mat bw_frame;				// balck-white image
 	VideoCapture video;			// video
@@ -49,6 +45,7 @@ int main() {
 #if LIFESTREAM
 	video.open(0);
 #endif
+	//initializing the renderer and input manager
 	renderer.init(WIN_WIDTH, WIN_HEIGHT, WIN_FOV);
 	m_pInput = Input::initialize(*renderer.getWindow());
 
@@ -57,14 +54,15 @@ int main() {
 	UIButton m_BtnHelp(BTN_TYPE::BTN_HELP, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (2.0f * BTN_WIDTH) - (BTN_WIDTH * 0.5f), WIN_HEIGHT - BTN_HEIGHT * 0.5f, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
 	UIButton m_BtnSolution(BTN_TYPE::BTN_SOLUTION, BTN_CONDITION::BTN_NORMAL, SquareData(BTN_WIDTH, WIN_HEIGHT - (BTN_HEIGHT * 0.5f), BTN_WIDTH, BTN_HEIGHT, 0, true, true));
 	UIButton m_BtnRescan(BTN_TYPE::BTN_RESCAN, BTN_CONDITION::BTN_NORMAL, SquareData(WIN_WIDTH - (BTN_WIDTH * 0.5f), WIN_HEIGHT - (BTN_HEIGHT * 0.5f) - BTN_HEIGHT, BTN_WIDTH, BTN_HEIGHT, 0, true, true));
-
 	UIButton* m_ArrBtns[BTN_TYPE::BTN_COUNT]{ &m_BtnConfirm, &m_BtnHelp, &m_BtnSolution, &m_BtnRescan };
 
+	//at first no button should be visible.
 	m_BtnConfirm.visibilityToggle(false);
 	m_BtnHelp.visibilityToggle(false);
 	m_BtnSolution.visibilityToggle(false);
 	m_BtnRescan.visibilityToggle(false);
 
+	//if no camera available (i.e. LIFESTREAM is 0, use fallback videos)
 	if (!video.isOpened())
 	{
 		cout << "No camera was found!\n";
@@ -87,7 +85,9 @@ int main() {
 
 	while (video.read(frame))											// loop through the video for each image
 	{
-		//Confirm the board -> solve sudoku
+		//Confirm the board -> solve sudoku.
+		//Set the program state
+		//Show the current buttons for the new state
 		if (m_BtnConfirm.manageButton())
 		{
 			solved_sudoku = solver.produce_sudoku_data(board);
@@ -145,8 +145,8 @@ int main() {
 
 		///////////////INPUT
 
-		//Example
 		//Called only once when the key is put down
+		//These are used to navigate on the board
 		if (Input::IsKeyPutDown(GLFW_KEY_UP))
 		{
             if ( cubePose % 9==0)  //prevent top boarder
@@ -161,7 +161,6 @@ int main() {
             else
                 cubePose++;
         }
-		//Called only once when the key is put down: SAME AS line 65
 		if (Input::IsKeyPutDown(GLFW_KEY_RIGHT))
 		{
             if (cubePose>=72) //prevent right boarder
@@ -177,6 +176,7 @@ int main() {
                 cubePose-=9;
         }
 
+		// Getting the pressed number (to edit sudoku values)
 		int pressed_number = 0;
 		if (Input::IsKeyPutDown(GLFW_KEY_1) || Input::IsKeyPutDown(GLFW_KEY_KP_1)) pressed_number = 1;
 		if (Input::IsKeyPutDown(GLFW_KEY_2) || Input::IsKeyPutDown(GLFW_KEY_KP_2)) pressed_number = 2;
@@ -189,10 +189,14 @@ int main() {
 		if (Input::IsKeyPutDown(GLFW_KEY_9) || Input::IsKeyPutDown(GLFW_KEY_KP_9)) pressed_number = 9;
 
 		if (pressed_number > 0) {
+			//if the scanned sudoku is not confirmed yet, user can change scanned sudoku numbers
+			//this is useful if our number recognition fails
 			if (state == ProgramState::SCANNED && square_data[cubePose].is_provided) {
 				board[cubePose % 9][cubePose / 9] = pressed_number;
 				square_data[cubePose].number = pressed_number;
 			}
+			//if the scanned sudoku is confirmed, then user can change empty boxes on the sudoku
+			//i.e. solve sudoku on the run themselves
 			else if(state == ProgramState::CONFIRMED && square_data[cubePose].is_provided == false) {
 				square_data[cubePose].number = pressed_number;
 				square_data[cubePose].is_visible = true;
