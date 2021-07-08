@@ -11,7 +11,7 @@ using namespace std;
 using namespace cv;
 
 enum ProgramState {
-	SCANNING, SCANNED, CONFIRMED
+	SCANNING, SCANNED, CONFIRMED, SOLVED
 };
 
 int image2numbers(Mat& number, Mat& demo_number);
