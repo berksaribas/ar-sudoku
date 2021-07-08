@@ -6,11 +6,13 @@
 using namespace std;
 using namespace cv;
 
-#define LIFESTREAM 0			// use prerecorded video or camera
+
+#define LIVESTREAM 0			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
 #define NUMBERS 1
+#define DEBUGOPTIONS 0
 
 const int fps = 30;				// frames per second of the video
 constexpr int WIN_WIDTH = 640;	// window width
@@ -42,7 +44,7 @@ int main() {
 	Mat recent_sudoku;
 
 
-#if LIFESTREAM
+#if LIVESTREAM
 	video.open(0);
 #endif
 	//initializing the renderer and input manager
@@ -74,8 +76,10 @@ int main() {
 		}
 	}
 
+#if DEBUGOPTIONS
 	namedWindow("Sudoku Solver Interface", CV_WINDOW_FREERATIO);		// window containing the video and augmentions
 	namedWindow("grid", CV_WINDOW_FREERATIO);							// window containing the rectified grid
+#endif
 
 #if !ADAPTIVETHRESHOLD
 	int Slider = 180;													// slider for manual threshold option
@@ -284,7 +288,9 @@ int main() {
 			for (int i = 0; i < 4; i++) {
 				corners[i] = approx_contour[(minWeightIndex + i) % 4];
 			}
+#if DEBUGOPTIONS
 			circle(frame, corners[0], 10, Scalar(200, 100, 200));		// highlighting the up left corner of the sudoku grid
+#endif
 
 #if SUBPIXEL															// getting more accurate corner points of the sudoku grid
 			Point2f Inters[4];
@@ -306,8 +312,9 @@ int main() {
 				Point2f subPixelPos[6];
 				for (int n = 1; n < 7; n++) {
 					Point2f circle_position = (Point2f)corners[i] + n * delta;	// 6 seperation points per contour between two corner points
+#if DEBUGOPTIONS
 					circle(frame, circle_position, 1, Scalar(255, 255, 0), -1);	// highlight seperator point position in the image
-
+#endif
 
 					for (int h = 0; h < stripesize.height; h++) {				// fill the stripe with intensity values
 						float h_rel = h - floorf(stripesize.height / 2);
@@ -414,10 +421,12 @@ int main() {
 #endif
 			Mat grid(Size(RESOLUTION, RESOLUTION), CV_8UC1);
 			warpPerspective(bw_frame, grid, TransMatrix, Size(RESOLUTION, RESOLUTION));
+#if DEBUGOPTIONS
 			imshow("grid", grid);
+#endif
 
 #if NUMBERS
-			if (n < 10) {
+			if (n < 10) { // average over 10 iterations --> higher number recognition accuracy
 
 				Mat number;
 				Mat demo_number;
@@ -428,8 +437,8 @@ int main() {
 						// subimage of the grid containing one number
 						// offset choosen via trial and error
 						grid(Rect(delta * c + 10, delta * r + 10, delta - 15, delta - 13)).copyTo(number);
-						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders
-						cvtColor(number, demo_number, CV_GRAY2BGR);			// for demo purposes (further functions only wor on bw images)
+						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders of the number
+						cvtColor(number, demo_number, CV_GRAY2BGR);			// for demo purposes (further functions only work on bw images)
 
 						// call number recognition program here
 						values[r][c][n] = image2numbers(number, demo_number);
@@ -451,10 +460,14 @@ int main() {
 							}
 							int recognized_number = mostFrequent(input);;
 							board[r][c] = recognized_number;
+#if DEBUGOPTIONS
 							cout << recognized_number;	// output recognized numbers
 							cout << "\t";
+#endif
 						}
+#if DEBUGOPTIONS
 						cout << "\n";
+#endif
 					}
 
 					for (int r = 0; r < 9; r++) {
@@ -477,7 +490,9 @@ int main() {
 			}
 #endif
 		}
+#if DEBUGOPTIONS
 		imshow("Sudoku Solver Interface", frame);
+#endif
 
 		if (recent_sudoku.empty() || state == ProgramState::SCANNING) {
 			glm::mat3 matrix = glm::make_mat3((double*)TransMatrix.data);
