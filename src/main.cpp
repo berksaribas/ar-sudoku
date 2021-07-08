@@ -283,7 +283,9 @@ int main() {
 			for (int i = 0; i < 4; i++) {
 				corners[i] = approx_contour[(minWeightIndex + i) % 4];
 			}
+#if DEBUGOPTIONS
 			circle(frame, corners[0], 10, Scalar(200, 100, 200));		// highlighting the up left corner of the sudoku grid
+#endif
 
 #if SUBPIXEL															// getting more accurate corner points of the sudoku grid
 			Point2f Inters[4];
@@ -305,8 +307,9 @@ int main() {
 				Point2f subPixelPos[6];
 				for (int n = 1; n < 7; n++) {
 					Point2f circle_position = (Point2f)corners[i] + n * delta;	// 6 seperation points per contour between two corner points
+#if DEBUGOPTIONS
 					circle(frame, circle_position, 1, Scalar(255, 255, 0), -1);	// highlight seperator point position in the image
-
+#endif
 
 					for (int h = 0; h < stripesize.height; h++) {				// fill the stripe with intensity values
 						float h_rel = h - floorf(stripesize.height / 2);
