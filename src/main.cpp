@@ -7,7 +7,7 @@ using namespace std;
 using namespace cv;
 
 
-#define LIFESTREAM 0			// use prerecorded video or camera
+#define LIFESTREAM 1			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
