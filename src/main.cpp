@@ -120,6 +120,7 @@ int main() {
 		//Show single solution
 		if (m_BtnHelp.manageButton())
 		{
+			square_data[cubePose].number = solved_sudoku.board[cubePose%9][cubePose/9];
 			square_data[cubePose].is_visible = true;
 		}
 		//Show the solution
@@ -127,11 +128,13 @@ int main() {
 		{
 			for (int r = 0; r < 9; r++) {
 				for (int c = 0; c < 9; c++) {
+					square_data[c * 9 + r].number = solved_sudoku.board[r][c];
 					square_data[c * 9 + r].is_visible = true;
 				}
 			}
 			m_BtnHelp.visibilityToggle(false);
 			m_BtnSolution.visibilityToggle(false);
+			state = ProgramState::SOLVED;
 		}
 		//Rescan
 		if (m_BtnRescan.manageButton())
@@ -176,6 +179,28 @@ int main() {
             else
                 cubePose-=9;
         }
+
+		int pressed_number = 0;
+		if (Input::IsKeyPutDown(GLFW_KEY_1)) pressed_number = 1;
+		if (Input::IsKeyPutDown(GLFW_KEY_2)) pressed_number = 2;
+		if (Input::IsKeyPutDown(GLFW_KEY_3)) pressed_number = 3;
+		if (Input::IsKeyPutDown(GLFW_KEY_4)) pressed_number = 4;
+		if (Input::IsKeyPutDown(GLFW_KEY_5)) pressed_number = 5;
+		if (Input::IsKeyPutDown(GLFW_KEY_6)) pressed_number = 6;
+		if (Input::IsKeyPutDown(GLFW_KEY_7)) pressed_number = 7;
+		if (Input::IsKeyPutDown(GLFW_KEY_8)) pressed_number = 8;
+		if (Input::IsKeyPutDown(GLFW_KEY_9)) pressed_number = 9;
+
+		if (pressed_number > 0) {
+			if (state == ProgramState::SCANNED && square_data[cubePose].is_provided) {
+				board[cubePose % 9][cubePose / 9] = pressed_number;
+				square_data[cubePose].number = pressed_number;
+			}
+			else if(state == ProgramState::CONFIRMED && square_data[cubePose].is_provided == false) {
+				square_data[cubePose].number = pressed_number;
+				square_data[cubePose].is_visible = true;
+			}
+		}
 
 		//Update
 		m_pInput->Update();
