@@ -1,8 +1,19 @@
 #include "SudokuSolver.h"
 #include <iostream>
 
+/*
+* We implemented a fast sudoku solver since we need the sudoku to be solved in real time.
+* Our sudoku solver uses bitwise operations to see if a number has appeared on a row/column/square
+*/
+
+/*
+* We precalculate shifts so they would be faster in runtime
+*/
 static const unsigned int shifts[10] = { 0, 1, 2, 4, 8, 16, 32, 64, 128, 256 };
 
+/*
+* We precalculate bit set countss i.e. how many bits are 1 in an unsigned short integer.
+*/
 static const unsigned int bit_set_counts[65536] =
 {
 #   define B2(n)  n,      n+1,      n+1,      n+2
@@ -19,6 +30,10 @@ static unsigned int calculate_one_count(unsigned short n) {
     return bit_set_counts[n];
 }
 
+/*
+* This functions creates SudokuData with provided 2d grid.
+* Our solver relies on this data as it contains row, col and square informations
+*/
 SudokuData SudokuSolver::produce_sudoku_data(int board[9][9])
 {
     SudokuData sudoku_data = {};
@@ -42,6 +57,9 @@ SudokuData SudokuSolver::produce_sudoku_data(int board[9][9])
     return sudoku_data;
 }
 
+/*
+* This is a utility function to print sudoku data, we used this function only for debugging.
+*/
 void SudokuSolver::print(SudokuData data) {
     for (int i = 0; i < 9; i++) {
         if (i % 3 == 0 && i != 0) {
@@ -57,6 +75,10 @@ void SudokuSolver::print(SudokuData data) {
     }
 }
 
+/*
+* This function returns an empty point that makes sense to process first.
+* Usually brute force sudoku solvers go over each empty element, this solver first
+*/
 EmptyPoint SudokuSolver::find_empty_points(SudokuData data) {
     unsigned short possible_value_bits[9][9];
 
@@ -65,11 +87,16 @@ EmptyPoint SudokuSolver::find_empty_points(SudokuData data) {
     selected_point.p.col = -1;
     selected_point.num_possible_values = INT_MAX;
 
+    //Check if 
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
             if (data.board[i][j] == 0) {
                 possible_value_bits[i][j] = ~(data.rows[i] | data.cols[j] | data.squares[(i / 3) * 3 + j / 3]);
 
+                // this means there are no suitable fields. possible_value_bits is unsigned short so 16 bits in total
+                // from the calculation above, we get 1111111xxxxxxxxx
+                // so there are no more 1's then 7, then it means something went wrong with previous calculations
+                // so we are returning that this is an incorrect solution
                 if (calculate_one_count(possible_value_bits[i][j]) == 7) {
                     selected_point.p.row = -2;
                     return selected_point;
@@ -105,6 +132,7 @@ EmptyPoint SudokuSolver::find_empty_points(SudokuData data) {
                 }
                 current_value_bits |= 65024; //adding back the initial ones, decimal of: 1111111000000000
 
+                // if there is only one possible value for that spot, return it 
                 if (calculate_one_count(current_value_bits) == 8) {
                     selected_point.p.row = i;
                     selected_point.p.col = j;
@@ -112,6 +140,7 @@ EmptyPoint SudokuSolver::find_empty_points(SudokuData data) {
                     return selected_point;
                 }
 
+                // try to find a spot that has less options
                 if (ep.num_possible_values < selected_point.num_possible_values) {
                     selected_point.p.row = i;
                     selected_point.p.col = j;

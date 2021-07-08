@@ -7,7 +7,7 @@ using namespace std;
 using namespace cv;
 
 
-#define LIFESTREAM 1			// use prerecorded video or camera
+#define LIFESTREAM 0			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
@@ -178,15 +178,15 @@ int main() {
         }
 
 		int pressed_number = 0;
-		if (Input::IsKeyPutDown(GLFW_KEY_1)) pressed_number = 1;
-		if (Input::IsKeyPutDown(GLFW_KEY_2)) pressed_number = 2;
-		if (Input::IsKeyPutDown(GLFW_KEY_3)) pressed_number = 3;
-		if (Input::IsKeyPutDown(GLFW_KEY_4)) pressed_number = 4;
-		if (Input::IsKeyPutDown(GLFW_KEY_5)) pressed_number = 5;
-		if (Input::IsKeyPutDown(GLFW_KEY_6)) pressed_number = 6;
-		if (Input::IsKeyPutDown(GLFW_KEY_7)) pressed_number = 7;
-		if (Input::IsKeyPutDown(GLFW_KEY_8)) pressed_number = 8;
-		if (Input::IsKeyPutDown(GLFW_KEY_9)) pressed_number = 9;
+		if (Input::IsKeyPutDown(GLFW_KEY_1) || Input::IsKeyPutDown(GLFW_KEY_KP_1)) pressed_number = 1;
+		if (Input::IsKeyPutDown(GLFW_KEY_2) || Input::IsKeyPutDown(GLFW_KEY_KP_2)) pressed_number = 2;
+		if (Input::IsKeyPutDown(GLFW_KEY_3) || Input::IsKeyPutDown(GLFW_KEY_KP_3)) pressed_number = 3;
+		if (Input::IsKeyPutDown(GLFW_KEY_4) || Input::IsKeyPutDown(GLFW_KEY_KP_4)) pressed_number = 4;
+		if (Input::IsKeyPutDown(GLFW_KEY_5) || Input::IsKeyPutDown(GLFW_KEY_KP_5)) pressed_number = 5;
+		if (Input::IsKeyPutDown(GLFW_KEY_6) || Input::IsKeyPutDown(GLFW_KEY_KP_6)) pressed_number = 6;
+		if (Input::IsKeyPutDown(GLFW_KEY_7) || Input::IsKeyPutDown(GLFW_KEY_KP_7)) pressed_number = 7;
+		if (Input::IsKeyPutDown(GLFW_KEY_8) || Input::IsKeyPutDown(GLFW_KEY_KP_8)) pressed_number = 8;
+		if (Input::IsKeyPutDown(GLFW_KEY_9) || Input::IsKeyPutDown(GLFW_KEY_KP_9)) pressed_number = 9;
 
 		if (pressed_number > 0) {
 			if (state == ProgramState::SCANNED && square_data[cubePose].is_provided) {
