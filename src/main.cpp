@@ -7,12 +7,12 @@ using namespace std;
 using namespace cv;
 
 
-#define LIVESTREAM 1			// use prerecorded video or camera
+#define LIVESTREAM 0			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
 #define NUMBERS 1
-#define DEBUGWINDOWS 0
+#define DEBUGOPTIONS 0
 
 const int fps = 30;				// frames per second of the video
 constexpr int WIN_WIDTH = 640;
@@ -77,7 +77,7 @@ int main() {
 		}
 	}
 
-#if DEBUGWINDOWS
+#if DEBUGOPTIONS
 	namedWindow("Sudoku Solver Interface", CV_WINDOW_FREERATIO);		// window containing the video and augmentions
 	namedWindow("grid", CV_WINDOW_FREERATIO);							// window containing the rectified grid
 #endif
@@ -413,12 +413,12 @@ int main() {
 #endif
 			Mat grid(Size(RESOLUTION, RESOLUTION), CV_8UC1);
 			warpPerspective(bw_frame, grid, TransMatrix, Size(RESOLUTION, RESOLUTION));
-#if DEBUGWINDOWS
+#if DEBUGOPTIONS
 			imshow("grid", grid);
 #endif
 
 #if NUMBERS
-			if (n < 10) {
+			if (n < 10) { // average over 10 iterations --> higher number recognition accuracy
 
 				Mat number;
 				Mat demo_number;
@@ -429,8 +429,8 @@ int main() {
 						// subimage of the grid containing one number
 						// offset choosen via trial and error
 						grid(Rect(delta * c + 10, delta * r + 10, delta - 15, delta - 13)).copyTo(number);
-						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders
-						cvtColor(number, demo_number, CV_GRAY2BGR);			// for demo purposes (further functions only wor on bw images)
+						threshold(number, number, 100, 255, THRESH_BINARY); // get rid of gray scale around the borders of the number
+						cvtColor(number, demo_number, CV_GRAY2BGR);			// for demo purposes (further functions only work on bw images)
 
 						// call number recognition program here
 						values[r][c][n] = image2numbers(number, demo_number);
@@ -452,10 +452,14 @@ int main() {
 							}
 							int recognized_number = mostFrequent(input);;
 							board[r][c] = recognized_number;
+#if DEBUGOPTIONS
 							cout << recognized_number;	// output recognized numbers
 							cout << "\t";
+#endif
 						}
+#if DEBUGOPTIONS
 						cout << "\n";
+#endif
 					}
 
 					for (int r = 0; r < 9; r++) {
@@ -478,7 +482,7 @@ int main() {
 			}
 #endif
 		}
-#if DEBUGWINDOWS
+#if DEBUGOPTIONS
 		imshow("Sudoku Solver Interface", frame);
 #endif
 
