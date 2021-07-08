@@ -60,11 +60,15 @@ int mostFrequent(vector<int> values) {
 	int freq[10] = { 0 };
 	int number = 0;
 	for (int n = 0; n < values.size(); n++) {
-		freq[values.at(n)] ++;
+		int x = values.at(n);
+		if (x <0 || x >9) continue;
+		freq[x] ++;
 	}
 	int max = 0;
 	for (int n = 0; n < values.size(); n++) {
-		if (freq[values.at(n)] > max) {
+		int x = values.at(n);
+		if (x < 0 || x >9) continue;
+		if (freq[x] > max) {
 			max = freq[n];
 			number = n;
 		}
