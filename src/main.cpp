@@ -7,11 +7,12 @@ using namespace std;
 using namespace cv;
 
 
-#define LIFESTREAM 1			// use prerecorded video or camera
+#define LIVESTREAM 1			// use prerecorded video or camera
 #define ADAPTIVETHRESHOLD 1		// use threshold slider or adaptive threshold
 #define RESOLUTION 600			// Size of the rectified sudoku grid
 #define SUBPIXEL 1				// Interpolation for subpixel accuracy of the corner points
 #define NUMBERS 1
+#define DEBUGWINDOWS 0
 
 const int fps = 30;				// frames per second of the video
 constexpr int WIN_WIDTH = 640;
@@ -46,7 +47,7 @@ int main() {
 	Mat recent_sudoku;
 
 
-#if LIFESTREAM
+#if LIVESTREAM
 	video.open(0);
 #endif
 	renderer.init(WIN_WIDTH, WIN_HEIGHT, WIN_FOV);
@@ -76,8 +77,10 @@ int main() {
 		}
 	}
 
+#if DEBUGWINDOWS
 	namedWindow("Sudoku Solver Interface", CV_WINDOW_FREERATIO);		// window containing the video and augmentions
 	namedWindow("grid", CV_WINDOW_FREERATIO);							// window containing the rectified grid
+#endif
 
 #if !ADAPTIVETHRESHOLD
 	int Slider = 180;													// slider for manual threshold option
@@ -385,7 +388,9 @@ int main() {
 #endif
 			Mat grid(Size(RESOLUTION, RESOLUTION), CV_8UC1);
 			warpPerspective(bw_frame, grid, TransMatrix, Size(RESOLUTION, RESOLUTION));
+#if DEBUGWINDOWS
 			imshow("grid", grid);
+#endif
 
 #if NUMBERS
 			if (n < 10) {
@@ -448,7 +453,9 @@ int main() {
 			}
 #endif
 		}
+#if DEBUGWINDOWS
 		imshow("Sudoku Solver Interface", frame);
+#endif
 
 		if (recent_sudoku.empty() || state == ProgramState::SCANNING) {
 			glm::mat3 matrix = glm::make_mat3((double*)TransMatrix.data);
